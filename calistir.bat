@@ -76,6 +76,7 @@ goto key
 echo.
 echo   Gemini su an yanit vermiyor (yogunluk veya gunluk ucretsiz kota).
 echo   Birkac saat sonra bu dosyayi tekrar acin; kaldigi yerden devam eder.
+echo   Anahtari yeni degistirdiyseniz klasordeki .env dosyasini silip tekrar deneyin.
 pause
 exit /b 1
 

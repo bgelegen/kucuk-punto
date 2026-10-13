@@ -24,7 +24,9 @@ export async function pickModel({ provider = 'gemini', apiKey, baseUrl, model, f
     } catch (e) {
       tried.push({ model: m, ok: false, code: e.code, message: e.message });
       log(`  ✗ ${m}: ${e.message}`);
-      if (e.code === 'AUTH') return { model: null, tried, authError: true };   // a bad key fails for every model
+      // a deleted/revoked key fails for every model; Google words this several ways (400/401/403)
+      const keyProblem = e.code === 'AUTH' || ([400, 401, 403].includes(e.status) && /key|credential|unauthori[sz]ed|permission|denied|suspended/i.test(e.message));
+      if (keyProblem) return { model: null, tried, authError: true };
     }
   }
   return { model: null, tried, authError: false };
