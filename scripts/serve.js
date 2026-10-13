@@ -77,4 +77,4 @@ function readBody(req, max) {
   });
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) startHarness();
+if (import.meta.url === `file://${process.argv[1]}`) startHarness(process.argv.includes('--mock') ? { mockMode: 'helpful' } : {});

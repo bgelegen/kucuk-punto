@@ -17,7 +17,7 @@
     "eval:check-gold": "node eval/check-gold.js",
     "capture": "node scripts/capture-fixtures.mjs",
     "serve": "node scripts/serve.js",
-    "serve:mock": "KP_MOCK=1 node scripts/serve.js",
+    "serve:mock": "node scripts/serve.js --mock",
     "cy:open": "cypress open --e2e --browser electron",
     "cy:run": "cypress run --e2e --browser electron",
     "demo": "node scripts/demo.js",

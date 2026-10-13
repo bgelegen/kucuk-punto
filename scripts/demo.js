@@ -1,5 +1,5 @@
 // Records the Cypress demo and checks the ≤ 90 s limit.
-//   npm run demo            (real model from .env)      KP_MOCK=1 npm run demo   (demo model)
+//   npm run demo     real model from .env (KP_API_KEY); KP_MOCK=1 in .env -> demo model
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

@@ -2,7 +2,7 @@
 // same analysis handler as the extension, served locally (see scripts/serve.js for why).
 //
 //   npm run cy:run          -> cypress/videos/demo.cy.js.mp4
-//   KP_MOCK=1 npm run cy:run  (no key: demo model, labelled "mock" on screen)
+//   KP_MOCK=1 in .env -> demo model, labelled "mock" on screen (no key needed)
 import { defineConfig } from 'cypress';
 import { startHarness } from './scripts/serve.js';
 

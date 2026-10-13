@@ -222,7 +222,7 @@ Kural motoru temel çizgisi: kesinlik %74,7, duyarlılık %62,9 (39/62). LLM son
 
 ```bash
 cp .env.example .env    # KP_API_KEY=... (Gemini)
-npm run demo            # gerçek modelle; anahtar yoksa: KP_MOCK=1 npm run demo (ekranda "mock" yazar)
+npm run demo            # gerçek modelle; anahtar yoksa .env içine KP_MOCK=1 yazın (ekranda "mock" yazar)
 ```
 
 Video senaryosu (`cypress/e2e/demo.cy.js`):
