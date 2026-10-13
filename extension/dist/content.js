@@ -111,13 +111,17 @@
     const walker = doc.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
       acceptNode(n) {
         const p = n.parentElement;
-        if (!p || !n.nodeValue.trim() || p.closest(SKIP_SELECTOR)) return NodeFilter.FILTER_REJECT;
+        if (!p || p.closest(SKIP_SELECTOR)) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       }
     });
     let node;
     while ((node = walker.nextNode()) && nodes++ < maxNodes) {
       const el = node.parentElement;
+      if (!node.nodeValue.trim()) {
+        if (cur) cur.parts.push(" ");
+        continue;
+      }
       let reason = reasonCache.get(el);
       if (reason === void 0) {
         reason = elementHiddenReason(el, win, doc);

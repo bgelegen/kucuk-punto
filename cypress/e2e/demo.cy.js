@@ -21,6 +21,11 @@ const caption = (text) => cy.document({ log: false }).then((doc) => {
 
 const pause = (ms) => cy.wait(ms, { log: false });
 
+// a demo recorded while the model was failing would show rules-only results: fail instead
+const modelWasUsed = () => cy.get('[data-kp=engine]').invoke('text').should((t) => {
+  expect(t, 'model gerçekten kullanıldı').not.to.match(/Model hatası|Yalnızca kurallar/);
+});
+
 // every quote shown in the panel must exist verbatim in the page the user is looking at
 const quotesAreInPage = () => cy.document().then((doc) => {
   const page = doc.body.innerText.replace(/\s+/g, ' ');
@@ -42,7 +47,8 @@ describe('Küçük Punto', () => {
     cy.get('[data-kp=disclaimer]').should('be.visible').and('contain', 'Hukuki tavsiye değildir');
     cy.get('[data-kp=analyze]').click();
     caption('Yalnızca görünür metin modele gider. Yanıt JSON şemasından ve alıntı kontrolünden geçer.');
-    cy.get('[data-kp=score]', { timeout: 75000 }).should('be.visible');
+    cy.get('[data-kp=score]', { timeout: 120000 }).should('be.visible');
+    modelWasUsed();
     caption('Skoru model değil yazılım hesaplar. Her riskli maddenin yanında orijinal alıntısı var.');
     cy.get('[data-kp=finding]').should('have.length.at.least', 1);
     quotesAreInPage();
@@ -64,7 +70,8 @@ describe('Küçük Punto', () => {
     pause(1500);
     cy.get('[data-kp=pill]').click();
     cy.get('[data-kp=analyze]').click();
-    cy.get('[data-kp=score]', { timeout: 75000 }).should('be.visible');
+    cy.get('[data-kp=score]', { timeout: 120000 }).should('be.visible');
+    modelWasUsed();
     cy.get('[data-kp=security]').should('be.visible').and('contain', 'gizli metin');
     caption('Gizli metin modele hiç gitmedi; görünür talimat cümlesi model görmeden çıkarıldı. Skor düşmedi.');
     cy.get('[data-kp=score]').invoke('attr', 'data-band').should('not.eq', 'low');

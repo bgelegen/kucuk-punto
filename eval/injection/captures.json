@@ -1,11 +1,11 @@
 {
-  "generated": "2026-10-13T15:28:57.332Z",
+  "generated": "2026-10-13T17:21:13.407Z",
   "browser": "141.0.7390.37",
   "page_agent_version": "1.12.4",
   "pages": {
     "streambox-abonelik.html": {
       "title": "StreamBox Abonelik ve Kullanım Koşulları",
-      "url": "http://127.0.0.1:46409/streambox-abonelik.html",
+      "url": "http://127.0.0.1:39381/streambox-abonelik.html",
       "ours": {
         "blocks": [
           {
@@ -125,7 +125,7 @@
             "tag": "p"
           },
           {
-            "text": "GizlilikÇerez tercihleriYardım © 2026 StreamBox (kurgusal)",
+            "text": "Gizlilik Çerez tercihleri Yardım © 2026 StreamBox (kurgusal)",
             "tag": "p"
           }
         ],

@@ -5,6 +5,11 @@
 //   KP_API_KEY=... node eval/run.js --provider gemini [--model gemini-flash-latest]
 //   node eval/run.js --replay eval/results/raw/<tag>  re-score saved model outputs without calling the API
 //
+// Live runs: temporary provider errors are retried with backoff, calls are paced (--pace ms, default
+// 12000, for free-tier per-minute limits), and a document whose saved answer is already valid for the
+// current prompt version is re-used instead of re-asked (--fresh to force). A document where the model
+// still fails is reported as "model hatası" and left out of the totals, never silently scored as rules.
+//
 // Writes eval/results/<tag>.json and regenerates EVAL.md.
 
 import fs from 'node:fs';
@@ -15,6 +20,7 @@ import { locatePoints, matchFindings } from './lib/match.js';
 import { analyze } from '../src/core/analyze.js';
 import { segment } from '../src/core/segment.js';
 import { makeLLM, PRESETS } from '../src/core/llm.js';
+import { PROMPT_VERSION } from '../src/core/prompt.js';
 import { writeEvalMarkdown } from './report.js';
 import { loadDotEnv } from '../scripts/env.js';
 
@@ -52,23 +58,39 @@ async function main() {
     const rawDir = path.join(EVAL_DIR, 'results/raw', tag);
     fs.mkdirSync(rawDir, { recursive: true });
     fs.writeFileSync(path.join(rawDir, '_meta.json'), JSON.stringify({ ...engineInfo, date: new Date().toISOString() }, null, 2));
-    const base = makeLLM(cfg);
+    const base = makeLLM(cfg, globalThis.fetch, {
+      timeoutMs: 120000,
+      retry: { retries: 4, maxWaitMs: 90000, onRetry: ({ wait, error }) => console.log(`\n    ${error.message} → ${Math.round(wait / 1000)} sn sonra tekrar denenecek`) }
+    });
+    const pace = Number(o.pace ?? 12000);
+    let lastLiveCall = 0;
     llmFactory = (doc) => {
-      const log = { doc: doc.id, responses: [] };
+      const file = path.join(rawDir, doc.id + '.json');
+      // resume: a valid saved answer for this prompt version is re-used (saves free-tier quota)
+      if (!o.fresh && fs.existsSync(file)) {
+        const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
+        const ok = saved.prompt_version === PROMPT_VERSION && saved.responses.length && !saved.responses.some(r => r.error);
+        if (ok) {
+          let i = 0;
+          doc.cached = true;
+          return async () => saved.responses[Math.min(i++, saved.responses.length - 1)];
+        }
+      }
+      const log = { doc: doc.id, prompt_version: PROMPT_VERSION, responses: [] };
       return async (req) => {
-        for (let attempt = 0; ; attempt++) {
-          const t = Date.now();
-          try {
-            const r = await base(req);
-            log.responses.push({ ...r, ms: Date.now() - t });
-            fs.writeFileSync(path.join(rawDir, doc.id + '.json'), JSON.stringify(log, null, 2));
-            return r;
-          } catch (e) {
-            if (e.code === 'RATE' && attempt < 4) { console.log(`  429 – ${20 * (attempt + 1)} sn bekleniyor`); await sleep(20000 * (attempt + 1)); continue; }
-            log.responses.push({ error: { code: e.code, message: e.message } });
-            fs.writeFileSync(path.join(rawDir, doc.id + '.json'), JSON.stringify(log, null, 2));
-            throw e;
-          }
+        const gap = lastLiveCall + pace - Date.now();
+        if (gap > 0) await sleep(gap);
+        const t = Date.now();
+        try {
+          const r = await base(req);
+          log.responses.push({ ...r, ms: Date.now() - t });
+          return r;
+        } catch (e) {
+          log.responses.push({ error: { code: e.code, status: e.status || null, message: e.message } });
+          throw e;
+        } finally {
+          lastLiveCall = Date.now();
+          fs.writeFileSync(file, JSON.stringify(log, null, 2));
         }
       };
     };
@@ -87,7 +109,10 @@ async function main() {
     const points = locatePoints(doc.gold, doc.blocks);
     const m = matchFindings(report.findings, points, clauses);
     const rejected = report.rejected.filter(r => r.reason !== 'DUPLICATE');
+    // with a model configured, a fallback-to-rules result is NOT a model result
+    const modelFailed = !!llmFactory && !!report.engine.error;
     results.push({
+      model_failed: modelFailed, cached: !!doc.cached,
       doc: doc.id, service: doc.service, document: doc.document, chars: doc.chars,
       engine_mode: report.engine.mode, model: report.engine.model, error: report.engine.error,
       score: report.score, band: report.band, ms: Date.now() - t0,
@@ -99,16 +124,20 @@ async function main() {
       usage: report.trace.usage,
       ...m
     });
-    console.log(`skor ${report.score} · bulgu ${m.counts.findings} · yakalanan ${m.counts.caught}/${m.counts.required} · yanlış alarm ${m.counts.false_alarms}` + (report.engine.error ? ` · HATA: ${report.engine.error.message}` : ''));
+    console.log(modelFailed ? `MODEL HATASI (toplama dahil edilmedi): ${report.engine.error.message}`
+      : `skor ${report.score} · bulgu ${m.counts.findings} · yakalanan ${m.counts.caught}/${m.counts.required} · yanlış alarm ${m.counts.false_alarms}${doc.cached ? ' · kayıtlı yanıt' : ''}`);
   }
-  const tot = results.reduce((a, r) => { for (const k of Object.keys(r.counts)) a[k] = (a[k] || 0) + r.counts[k]; return a; }, {});
+  const scored = results.filter(r => !r.model_failed);
+  const tot = scored.reduce((a, r) => { for (const k of Object.keys(r.counts)) a[k] = (a[k] || 0) + r.counts[k]; return a; }, {});
   const precision = tot.findings ? (tot.findings - tot.false_alarms) / tot.findings : null;
   const recall = tot.required ? tot.caught / tot.required : null;
-  const summary = { tag, engine: engineInfo, date: new Date().toISOString(), totals: tot, precision, recall, f1: precision && recall ? 2 * precision * recall / (precision + recall) : null, docs: results };
+  const summary = { tag, engine: { ...engineInfo, prompt_version: PROMPT_VERSION }, date: new Date().toISOString(), docs_ok: scored.length, docs_failed: results.length - scored.length, totals: tot, precision, recall, f1: precision && recall ? 2 * precision * recall / (precision + recall) : null, docs: results };
   fs.mkdirSync(path.join(EVAL_DIR, 'results'), { recursive: true });
   fs.writeFileSync(path.join(EVAL_DIR, 'results', tag + '.json'), JSON.stringify(summary, null, 2) + '\n');
-  console.log(`\n${tag}: kesinlik ${(precision * 100).toFixed(1)}% · duyarlılık ${(recall * 100).toFixed(1)}% · F1 ${(summary.f1 * 100).toFixed(1)}%`);
+  const pct = v => v == null ? '—' : (v * 100).toFixed(1) + '%';
+  console.log(`\n${tag}: kesinlik ${pct(precision)} · duyarlılık ${pct(recall)} · F1 ${pct(summary.f1)} (${scored.length}/${results.length} belge)`);
   writeEvalMarkdown();
+  if (summary.docs_failed) { console.log(`\n${summary.docs_failed} belgede model yanıt vermedi. Aynı komutu tekrar çalıştırınca yalnızca bunlar yeniden sorulur.`); process.exitCode = 2; }
 }
 
 main().catch(e => { console.error('\n' + e.message); process.exit(1); });

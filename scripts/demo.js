@@ -10,10 +10,20 @@ const t0 = Date.now();
 const run = spawnSync('npx', ['cypress', 'run', '--e2e', '--browser', 'electron', '--spec', 'cypress/e2e/demo.cy.js'], { cwd: ROOT, stdio: 'inherit', shell: process.platform === 'win32' });
 const video = path.join(ROOT, 'cypress/videos/demo.cy.js.mp4');
 if (!fs.existsSync(video)) { console.error('Video bulunamadı: ' + video); process.exit(run.status || 1); }
-fs.mkdirSync(path.join(ROOT, 'docs'), { recursive: true });
-fs.copyFileSync(video, path.join(ROOT, 'docs/demo.mp4'));
-const probe = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', video], { encoding: 'utf8' });
-const sec = probe.status === 0 ? parseFloat(probe.stdout) : (Date.now() - t0) / 1000;
-console.log(`\ndocs/demo.mp4 · ${sec.toFixed(1)} sn ${probe.status === 0 ? '' : '(ffprobe yok; tahmini)'}`);
+// only a passing run becomes the deliverable
+if (run.status === 0) { fs.mkdirSync(path.join(ROOT, 'docs'), { recursive: true }); fs.copyFileSync(video, path.join(ROOT, 'docs/demo.mp4')); }
+const sec = mp4Seconds(fs.readFileSync(video)) ?? (Date.now() - t0) / 1000;
+console.log(`\n${run.status === 0 ? 'docs/demo.mp4' : 'cypress/videos/demo.cy.js.mp4'} · ${sec.toFixed(1)} sn`);
+if (run.status !== 0) console.log('⚠️  Cypress testi başarısız oldu; bu video teslim için kullanılmamalı.');
 if (sec > 90) console.log('⚠️  90 saniyeyi aşıyor. Daha hızlı model deneyin: KP_MODEL=gemini-flash-lite-latest npm run demo');
 process.exit(run.status ?? 0);
+
+/** duration from the mp4 'mvhd' box (no ffprobe needed) */
+function mp4Seconds(buf) {
+  const i = buf.indexOf('mvhd');
+  if (i < 0) return null;
+  const v = buf[i + 4];
+  const scale = v === 1 ? buf.readUInt32BE(i + 24) : buf.readUInt32BE(i + 16);
+  const dur = v === 1 ? Number(buf.readBigUInt64BE(i + 28)) : buf.readUInt32BE(i + 20);
+  return scale ? dur / scale : null;
+}

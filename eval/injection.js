@@ -94,6 +94,7 @@ async function runOurs(blocks, hidden, llm, label) {
   return {
     score: rep.score, rules_score: rep.rules_score, shown: rep.findings.length, rejected: rep.rejected.length,
     engine: rep.engine.error ? 'kurallar (model reddedildi: ' + rep.engine.error.code + ')' : 'model',
+    model_error: rep.engine.error && rep.engine.error.code !== 'SCHEMA' ? rep.engine.error.message : null,
     conflict: rep.score_status === 'conflict', shown_score: rep.score_status === 'conflict' ? 'Belirsiz' : String(rep.score),
     security_detected: rep.security.detected,
     hidden_suspicious: rep.security.hidden_suspicious.length, quarantined: rep.security.quarantined.length,
@@ -155,7 +156,9 @@ for (const f of fs.readdirSync(path.join(EVAL_DIR, 'corpus')).filter(f => f.ends
 loadDotEnv();
 const outFile = path.join(EVAL_DIR, 'results/injection.json');
 const previous = fs.existsSync(outFile) ? JSON.parse(fs.readFileSync(outFile, 'utf8')) : {};
-const realRuns = previous.real_runs || {};
+// keep only earlier real-model runs in which the model actually answered every request
+const rowFailed = r => !!(r.naive?.error || r.ours?.model_error || (r.ours?.engine || '').startsWith('kurallar (model reddedildi: UPSTREAM') || /RATE|QUOTA|NETWORK|AUTH/.test(r.ours?.engine || ''));
+const realRuns = Object.fromEntries(Object.entries(previous.real_runs || {}).filter(([, v]) => !v.rows.some(rowFailed)));
 const provider = args.provider || (args.real ? process.env.KP_PROVIDER : null);
 if (provider) {
   const preset = PRESETS[provider];
@@ -163,14 +166,19 @@ if (provider) {
   const model = args.model || process.env.KP_MODEL || preset.model;
   const base = { ...preset, model, baseUrl: args['base-url'] || process.env.KP_BASE_URL || preset.baseUrl, apiKey: process.env.KP_API_KEY };
   if (!base.apiKey && !preset.noKey) throw new Error('KP_API_KEY gerekli (.env).');
-  const ours = makeLLM(base);
-  const naive = preset.kind === 'openai' ? makeLLM({ ...base, structured: 'json_object' }) : null;
+  const retry = { retries: 4, maxWaitMs: 90000, onRetry: ({ wait, error }) => console.log(`  ${error.message} → ${Math.round(wait / 1000)} sn sonra tekrar`) };
+  const ours = makeLLM(base, globalThis.fetch, { timeoutMs: 120000, retry });
+  const naive = preset.kind === 'openai' ? makeLLM({ ...base, structured: 'json_object' }, globalThis.fetch, { timeoutMs: 120000, retry }) : null;
+  const paced = (fn) => async (...a) => { await new Promise(r => setTimeout(r, Number(args.pace ?? 12000))); return fn(...a); };
   const rows = [];
   for (const v of variants) {
     console.log(`gerçek model: ${v.id}…`);
-    rows.push({ variant: v.id, variant_tr: v.name_tr, naive: naive ? await runNaive(v.naive, naive) : { error: 'bu sağlayıcı için yok' }, ours: await runOurs(...v.ours, ours, { provider, model }) });
+    rows.push({ variant: v.id, variant_tr: v.name_tr, naive: naive ? await runNaive(v.naive, paced(naive)) : { error: 'bu sağlayıcı için yok' }, ours: await runOurs(...v.ours, paced(ours), { provider, model }) });
   }
-  realRuns[`${provider}:${model}`] = { date: new Date().toISOString(), provider, model, rows };
+  const key = `${provider}:${model}`, failed = rows.some(rowFailed);
+  const prevOk = !!realRuns[key];
+  if (!(failed && prevOk)) realRuns[key] = { date: new Date().toISOString(), provider, model, rows };   // never replace a good run with a failed one
+  else console.log('  (Bu çalıştırma hatalı; önceki başarılı sonuç korundu.)');
 }
 
 // ---------- write
@@ -204,5 +212,7 @@ console.log('\nModel × boru hattı (skor / gösterilen bulgu)');
 for (const x of matrix) console.log(`${x.variant.padEnd(8)} ${x.model.padEnd(20)} naive ${String(x.naive.score).padStart(3)} / ${x.naive.shown}   ours ${x.ours.shown_score.padStart(3)} / ${x.ours.shown}  ${x.ours.engine}${x.ours.conflict ? '  [TUTARSIZLIK UYARISI]' : ''}`);
 console.log('\nHedefli:', targeted.map(t => `${t.id}:${t.ok ? 'OK' : 'FAIL'}`).join('  '));
 console.log(`Filtre yanlış pozitif: ${flagged.length}/${sentences} cümle`);
-for (const [k, v] of Object.entries(realRuns)) for (const r of v.rows) console.log(`gerçek ${k} ${r.variant}: naive ${r.naive.score ?? r.naive.error} / ours ${r.ours.shown_score} (bulgu ${r.ours.shown}, model bildirdi ${r.ours.model_reported})${r.ours.conflict ? ' [TUTARSIZLIK]' : ''}`);
+for (const [k, v] of Object.entries(realRuns)) for (const r of v.rows) console.log(`gerçek ${k} ${r.variant}: naive ${r.naive.error ? 'MODEL HATASI' : r.naive.score} / ours ${r.ours.model_error ? 'MODEL HATASI: ' + r.ours.model_error : `${r.ours.shown_score} (bulgu ${r.ours.shown}, model bildirdi ${r.ours.model_reported})${r.ours.conflict ? ' [TUTARSIZLIK]' : ''}`}`);
+const realFailed = provider && Object.values(realRuns).some(v => v.provider === provider && v.rows.some(rowFailed));
 if (targeted.some(t => !t.ok) || readerRows.some(r => r.ours_model !== 'no')) process.exit(1);
+if (realFailed) process.exitCode = 2;

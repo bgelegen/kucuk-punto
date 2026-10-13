@@ -14,16 +14,40 @@ export const PRESETS = {
 };
 
 export class LLMError extends Error {
-  constructor(code, message, status) { super(message); this.code = code; this.status = status; }
+  constructor(code, message, status, extra = {}) { super(message); this.code = code; this.status = status; Object.assign(this, extra); }
 }
 
-function httpError(status, body) {
-  const short = String(body || '').slice(0, 300);
-  if (status === 401 || status === 403) return new LLMError('AUTH', 'API anahtarı geçersiz veya bu modele erişimi yok.', status);
-  if (status === 404) return new LLMError('MODEL', 'Model veya adres bulunamadı. Ayarlardaki model adını kontrol edin.', status);
-  if (status === 429) return new LLMError('RATE', 'Sağlayıcının istek sınırına takıldınız. Biraz bekleyip tekrar deneyin.', status);
-  if (status >= 500) return new LLMError('UPSTREAM', 'Model sağlayıcısında geçici bir hata oluştu.', status);
-  return new LLMError('HTTP', `Sağlayıcı isteği reddetti (${status}): ${short}`, status);
+// The provider's own error text (shortened) is kept so a failure can be diagnosed later.
+// Error bodies never contain the API key.
+function providerMessage(body) {
+  try {
+    let j = JSON.parse(body);
+    if (Array.isArray(j)) j = j[0];
+    const m = j?.error?.message || j?.message;
+    if (m) return String(m).replace(/\s+/g, ' ').slice(0, 220);
+  } catch { /* not JSON */ }
+  return String(body || '').replace(/\s+/g, ' ').slice(0, 220);
+}
+
+// "Please retry in 41.3s" / "retryDelay": "41s" / Retry-After header
+function retryAfterMs(body, header) {
+  const h = Number(header);
+  if (Number.isFinite(h) && h > 0) return h * 1000;
+  const m = /retry(?:Delay"?\s*:\s*"|\s+in\s+)(\d+(?:\.\d+)?)s/i.exec(String(body || ''));
+  return m ? Math.ceil(parseFloat(m[1]) * 1000) : null;
+}
+
+export function httpError(status, body, retryHeader) {
+  const detail = providerMessage(body);
+  const tail = detail ? ` (${status}: ${detail})` : ` (${status})`;
+  const wait = retryAfterMs(body, retryHeader);
+  // Gemini answers an invalid key with 400 INVALID_ARGUMENT "API key not valid"
+  if (status === 401 || status === 403 || /api[ _-]?key[^.]{0,40}(not valid|invalid|expired)|API_KEY_INVALID/i.test(String(body))) return new LLMError('AUTH', 'API anahtarı geçersiz veya bu modele erişimi yok.' + tail, status);
+  if (status === 404) return new LLMError('MODEL', 'Model veya adres bulunamadı. Ayarlardaki model adını kontrol edin.' + tail, status);
+  if (status === 429 && /per ?day|PerDay|daily/i.test(String(body))) return new LLMError('QUOTA', 'Bu model için günlük ücretsiz kota doldu.' + tail, status);
+  if (status === 429) return new LLMError('RATE', 'Sağlayıcının istek sınırına takıldınız. Biraz bekleyip tekrar deneyin.' + tail, status, { retryAfterMs: wait });
+  if (status >= 500) return new LLMError('UPSTREAM', 'Model sağlayıcısında geçici bir hata oluştu.' + tail, status, { retryAfterMs: wait });
+  return new LLMError('HTTP', `Sağlayıcı isteği reddetti.${tail}`, status);
 }
 
 async function postJSON(fetchImpl, url, headers, body, timeoutMs) {
@@ -36,16 +60,41 @@ async function postJSON(fetchImpl, url, headers, body, timeoutMs) {
     throw new LLMError(e.name === 'AbortError' ? 'TIMEOUT' : 'NETWORK', e.name === 'AbortError' ? 'Model zamanında yanıt vermedi.' : 'Model sağlayıcısına bağlanılamadı.');
   } finally { clearTimeout(t); }
   const text = await res.text();
-  if (!res.ok) throw httpError(res.status, text);
+  if (!res.ok) throw httpError(res.status, text, res.headers?.get?.('retry-after'));
   try { return JSON.parse(text); } catch { throw new LLMError('BAD_RESPONSE', 'Sağlayıcı yanıtı JSON değil.'); }
+}
+
+const RETRYABLE = new Set(['RATE', 'UPSTREAM', 'NETWORK']);   // not QUOTA (daily), AUTH, MODEL, TIMEOUT
+
+/**
+ * Retries temporary provider errors (429 per-minute limit, 5xx) with backoff, honouring the
+ * provider's suggested wait. Gives up when the wait would exceed maxWaitMs.
+ */
+export function withRetry(call, { retries = 1, maxWaitMs = 15000, baseMs = 4000, sleep = ms => new Promise(r => setTimeout(r, ms)), onRetry } = {}) {
+  return async (req) => {
+    for (let attempt = 0; ; attempt++) {
+      try { return await call(req); }
+      catch (e) {
+        if (!RETRYABLE.has(e.code) || attempt >= retries) throw e;
+        const wait = Math.max(e.retryAfterMs || 0, baseMs * 3 ** attempt);
+        if (wait > maxWaitMs) throw e;
+        onRetry?.({ attempt: attempt + 1, wait, error: e });
+        await sleep(wait);
+      }
+    }
+  };
 }
 
 /**
  * @param {{kind:'openai'|'anthropic'|'mock', baseUrl:string, model:string, apiKey?:string, structured?:string}} cfg
  * @returns {(messages:{system:string, turns:{role:string,content:string}[]}) => Promise<{text:string, usage?:object, model:string}>}
  */
-export function makeLLM(cfg, fetchImpl = globalThis.fetch, { timeoutMs = 90000 } = {}) {
+export function makeLLM(cfg, fetchImpl = globalThis.fetch, { timeoutMs = 90000, retry } = {}) {
   if (cfg.kind === 'mock') return cfg.respond;
+  return withRetry(makeRawLLM(cfg, fetchImpl, timeoutMs), retry);
+}
+
+function makeRawLLM(cfg, fetchImpl, timeoutMs) {
   const base = String(cfg.baseUrl || '').replace(/\/+$/, '');
   if (!base || !cfg.model) throw new LLMError('CONFIG', 'Sağlayıcı adresi veya model adı eksik.');
 

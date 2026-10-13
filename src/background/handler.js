@@ -51,7 +51,7 @@ export function sanitizePayload(p) {
 /**
  * @returns {Promise<{ok:true, report:object} | {ok:false, error:{code:string, message:string}}>}
  */
-export async function handleAnalyze(rawPayload, { settings = DEFAULT_SETTINGS, fetchImpl = globalThis.fetch, randomBytes, onProgress, llmOverride = null, timeoutMs } = {}) {
+export async function handleAnalyze(rawPayload, { settings = DEFAULT_SETTINGS, fetchImpl = globalThis.fetch, randomBytes, onProgress, llmOverride = null, timeoutMs, retry } = {}) {
   // llmOverride: {llm, provider, model} — tests, ablation and the Cypress harness
   let payload;
   try { payload = sanitizePayload(rawPayload); }
@@ -66,7 +66,7 @@ export async function handleAnalyze(rawPayload, { settings = DEFAULT_SETTINGS, f
       if (!cfg.apiKey && !cfg.noKey) {
         return { ok: false, error: { code: 'NO_KEY', message: 'Henüz bir model API anahtarı girilmedi. Ayarlardan kendi anahtarınızı ekleyin (Google AI Studio’dan ücretsiz Gemini anahtarı alınabilir) ya da şimdilik yalnızca anahtar kelime kurallarıyla analiz edin.' } };
       }
-      try { llm = makeLLM(cfg, fetchImpl, timeoutMs ? { timeoutMs } : undefined); }
+      try { llm = makeLLM(cfg, fetchImpl, { ...(timeoutMs ? { timeoutMs } : {}), ...(retry ? { retry } : {}) }); }
       catch (e) { return { ok: false, error: { code: e.code || 'CONFIG', message: e.message } }; }
     }
   }

@@ -265,19 +265,39 @@
     custom: { label: "OpenAI uyumlu (özel)", kind: "openai", baseUrl: "", model: "", structured: "json_object" }
   };
   var LLMError = class extends Error {
-    constructor(code, message, status) {
+    constructor(code, message, status, extra = {}) {
       super(message);
       this.code = code;
       this.status = status;
+      Object.assign(this, extra);
     }
   };
-  function httpError(status, body) {
-    const short = String(body || "").slice(0, 300);
-    if (status === 401 || status === 403) return new LLMError("AUTH", "API anahtarı geçersiz veya bu modele erişimi yok.", status);
-    if (status === 404) return new LLMError("MODEL", "Model veya adres bulunamadı. Ayarlardaki model adını kontrol edin.", status);
-    if (status === 429) return new LLMError("RATE", "Sağlayıcının istek sınırına takıldınız. Biraz bekleyip tekrar deneyin.", status);
-    if (status >= 500) return new LLMError("UPSTREAM", "Model sağlayıcısında geçici bir hata oluştu.", status);
-    return new LLMError("HTTP", `Sağlayıcı isteği reddetti (${status}): ${short}`, status);
+  function providerMessage(body) {
+    try {
+      let j = JSON.parse(body);
+      if (Array.isArray(j)) j = j[0];
+      const m = j?.error?.message || j?.message;
+      if (m) return String(m).replace(/\s+/g, " ").slice(0, 220);
+    } catch {
+    }
+    return String(body || "").replace(/\s+/g, " ").slice(0, 220);
+  }
+  function retryAfterMs(body, header) {
+    const h = Number(header);
+    if (Number.isFinite(h) && h > 0) return h * 1e3;
+    const m = /retry(?:Delay"?\s*:\s*"|\s+in\s+)(\d+(?:\.\d+)?)s/i.exec(String(body || ""));
+    return m ? Math.ceil(parseFloat(m[1]) * 1e3) : null;
+  }
+  function httpError(status, body, retryHeader) {
+    const detail = providerMessage(body);
+    const tail = detail ? ` (${status}: ${detail})` : ` (${status})`;
+    const wait = retryAfterMs(body, retryHeader);
+    if (status === 401 || status === 403 || /api[ _-]?key[^.]{0,40}(not valid|invalid|expired)|API_KEY_INVALID/i.test(String(body))) return new LLMError("AUTH", "API anahtarı geçersiz veya bu modele erişimi yok." + tail, status);
+    if (status === 404) return new LLMError("MODEL", "Model veya adres bulunamadı. Ayarlardaki model adını kontrol edin." + tail, status);
+    if (status === 429 && /per ?day|PerDay|daily/i.test(String(body))) return new LLMError("QUOTA", "Bu model için günlük ücretsiz kota doldu." + tail, status);
+    if (status === 429) return new LLMError("RATE", "Sağlayıcının istek sınırına takıldınız. Biraz bekleyip tekrar deneyin." + tail, status, { retryAfterMs: wait });
+    if (status >= 500) return new LLMError("UPSTREAM", "Model sağlayıcısında geçici bir hata oluştu." + tail, status, { retryAfterMs: wait });
+    return new LLMError("HTTP", `Sağlayıcı isteği reddetti.${tail}`, status);
   }
   async function postJSON(fetchImpl, url, headers, body, timeoutMs) {
     const ctrl = new AbortController();
@@ -291,15 +311,34 @@
       clearTimeout(t);
     }
     const text = await res.text();
-    if (!res.ok) throw httpError(res.status, text);
+    if (!res.ok) throw httpError(res.status, text, res.headers?.get?.("retry-after"));
     try {
       return JSON.parse(text);
     } catch {
       throw new LLMError("BAD_RESPONSE", "Sağlayıcı yanıtı JSON değil.");
     }
   }
-  function makeLLM(cfg, fetchImpl = globalThis.fetch, { timeoutMs = 9e4 } = {}) {
+  var RETRYABLE = /* @__PURE__ */ new Set(["RATE", "UPSTREAM", "NETWORK"]);
+  function withRetry(call, { retries = 1, maxWaitMs = 15e3, baseMs = 4e3, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), onRetry } = {}) {
+    return async (req) => {
+      for (let attempt = 0; ; attempt++) {
+        try {
+          return await call(req);
+        } catch (e) {
+          if (!RETRYABLE.has(e.code) || attempt >= retries) throw e;
+          const wait = Math.max(e.retryAfterMs || 0, baseMs * 3 ** attempt);
+          if (wait > maxWaitMs) throw e;
+          onRetry?.({ attempt: attempt + 1, wait, error: e });
+          await sleep(wait);
+        }
+      }
+    };
+  }
+  function makeLLM(cfg, fetchImpl = globalThis.fetch, { timeoutMs = 9e4, retry } = {}) {
     if (cfg.kind === "mock") return cfg.respond;
+    return withRetry(makeRawLLM(cfg, fetchImpl, timeoutMs), retry);
+  }
+  function makeRawLLM(cfg, fetchImpl, timeoutMs) {
     const base = String(cfg.baseUrl || "").replace(/\/+$/, "");
     if (!base || !cfg.model) throw new LLMError("CONFIG", "Sağlayıcı adresi veya model adı eksik.");
     if (cfg.kind === "anthropic") {
@@ -959,7 +998,7 @@ Return the complete JSON again, fixing these problems. JSON only.`;
     const meta = { title: str(m.title, 300), url: str(m.url, 2e3), host: str(m.host, 300), lang: str(m.lang, 20) };
     return { blocks, hidden, meta, rulesOnly: p.rulesOnly === true };
   }
-  async function handleAnalyze(rawPayload, { settings = DEFAULT_SETTINGS, fetchImpl = globalThis.fetch, randomBytes, onProgress, llmOverride = null, timeoutMs } = {}) {
+  async function handleAnalyze(rawPayload, { settings = DEFAULT_SETTINGS, fetchImpl = globalThis.fetch, randomBytes, onProgress, llmOverride = null, timeoutMs, retry } = {}) {
     let payload;
     try {
       payload = sanitizePayload(rawPayload);
@@ -979,7 +1018,7 @@ Return the complete JSON again, fixing these problems. JSON only.`;
           return { ok: false, error: { code: "NO_KEY", message: "Henüz bir model API anahtarı girilmedi. Ayarlardan kendi anahtarınızı ekleyin (Google AI Studio’dan ücretsiz Gemini anahtarı alınabilir) ya da şimdilik yalnızca anahtar kelime kurallarıyla analiz edin." } };
         }
         try {
-          llm = makeLLM(cfg, fetchImpl, timeoutMs ? { timeoutMs } : void 0);
+          llm = makeLLM(cfg, fetchImpl, { ...timeoutMs ? { timeoutMs } : {}, ...retry ? { retry } : {} });
         } catch (e) {
           return { ok: false, error: { code: e.code || "CONFIG", message: e.message } };
         }

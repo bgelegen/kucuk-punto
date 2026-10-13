@@ -9,6 +9,7 @@ import { startHarness } from './scripts/serve.js';
 const PORT = Number(process.env.KP_PORT || 5173);
 
 export default defineConfig({
+  allowCypressEnv: false,   // nothing secret goes through Cypress.env(); the key stays in the Node harness
   video: true,
   videoCompression: 28,
   viewportWidth: 1280,

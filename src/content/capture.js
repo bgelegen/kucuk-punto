@@ -113,13 +113,16 @@ export function capturePage({ doc = document, win = window, maxNodes = 60000 } =
   const walker = doc.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
     acceptNode(n) {
       const p = n.parentElement;
-      if (!p || !n.nodeValue.trim() || p.closest(SKIP_SELECTOR)) return NodeFilter.FILTER_REJECT;
+      if (!p || p.closest(SKIP_SELECTOR)) return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     }
   });
   let node;
   while ((node = walker.nextNode()) && nodes++ < maxNodes) {
     const el = node.parentElement;
+    // whitespace between inline elements ("<a>Gizlilik</a> <a>Çerez</a>") is a visible space:
+    // dropping it glued words together and quotes no longer matched the page
+    if (!node.nodeValue.trim()) { if (cur) cur.parts.push(' '); continue; }
     let reason = reasonCache.get(el);
     if (reason === undefined) { reason = elementHiddenReason(el, win, doc); reasonCache.set(el, reason); }
     if (!reason) reason = nodeGeometryReason(node, doc, win);

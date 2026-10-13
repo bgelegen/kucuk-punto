@@ -49,12 +49,16 @@ Chrome'da `chrome://extensions` → sağ üstte **Geliştirici modu** → **Pake
 
 **3. Kullanın.** Bir kullanım koşulları sayfası açın. Sağ altta "… algılandı · analiz et" kutusu çıkar. Algılanmayan bir sayfada araç çubuğundaki simgeye tıklayın.
 
+### Windows'ta tek tıkla değerlendirme + demo
+
+`calistir.bat` dosyasına çift tıklayın. Node.js yoksa kurar, paketleri indirir, Gemini anahtarını ekranda göstermeden sorar (`.env`), çalışan bir Gemini modelini seçer (ücretsiz modeller sık sık "aşırı yoğun" 503 veya kota 429 döndürür), sonra değerlendirmeyi, injection testini ve Cypress videosunu sırayla çalıştırır. Yarıda kalırsa tekrar çalıştırın: başarılı model yanıtları kaydedildiği için yalnızca eksikler yeniden sorulur.
+
 ### Geliştirme
 
 ```bash
 npm install          # esbuild, cypress, @page-agent/page-controller (yalnızca karşılaştırma için)
 npm run build        # src/ → extension/dist/
-npm test             # 22 birim testi
+npm test             # 26 birim testi
 cp .env.example .env # eval ve Cypress için: KP_API_KEY=...
 ```
 
@@ -213,7 +217,7 @@ Kural motoru temel çizgisi: kesinlik %74,7, duyarlılık %62,9 (39/62). LLM son
 
 | Komut | Ne test eder |
 |---|---|
-| `npm test` | 22 birim testi: normalizasyon, parçalama, alıntı doğrulama, şema, skor, karantina (TR/EN, yanlış pozitif), onarım turu, çelişki durumu, nonce, yük sınırları |
+| `npm test` | 26 birim testi: normalizasyon, parçalama, alıntı doğrulama, şema, skor, karantina (TR/EN, yanlış pozitif), onarım turu, çelişki durumu, nonce, yük sınırları, sağlayıcı hatalarında yeniden deneme |
 | `npm run test:e2e` | **Gerçek paketlenmemiş eklenti** Chromium'da (Playwright): ayarlar sayfası, tespit kutusu, rapor, her alıntının sayfada birebir bulunması, rozet, "Metinde göster", injection sayfası, XSS denemesi, anahtarsız mod, sağlayıcı hatası. Kurulum: `npm i -D playwright && npx playwright install chromium` |
 | `npm run eval:injection` | Okuyucu karşılaştırması, ablasyon ve hedefli saldırılar |
 | `npm run demo` | Cypress demo videosu → `docs/demo.mp4` (≤ 90 sn kontrolü) |

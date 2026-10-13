@@ -5,6 +5,8 @@ title Kucuk Punto - degerlendirme ve demo videosu
 echo.
 echo   KUCUK PUNTO - Gemini degerlendirmesi ve Cypress demo videosu
 echo   ------------------------------------------------------------
+echo   Not: Bu pencereye SAG TIKLAMAK yapistirma yapar. Anahtari
+echo   girdikten sonra pencereye sag tiklamayin.
 echo.
 
 where node >nul 2>nul
@@ -20,7 +22,7 @@ if errorlevel 1 (
 )
 winget install -e --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements
 echo.
-echo   Node.js kuruldu. Bu pencereyi kapatip calistir.bat dosyasina TEKRAR cift tiklayin.
+echo   Node.js kuruldu. Bu pencereyi kapatip calistir dosyasina TEKRAR cift tiklayin.
 pause
 exit /b 0
 
@@ -34,6 +36,8 @@ if errorlevel 1 goto hata
 :deps_ok
 echo   [2/4] Paketler hazir.
 
+set TRIED_KEY=0
+:key
 if exist .env goto key_ok
 echo.
 echo   [3/4] Gemini API anahtarinizi yapistirin (sag tik) ve Enter'a basin.
@@ -44,12 +48,12 @@ if errorlevel 1 goto hata
 echo   [3/4] Anahtar hazir (.env dosyasinda, GitHub'a gitmez).
 
 echo.
-echo   [4/4] Gemini 6 sozlesmeyi ve gizli talimat sayfasini inceliyor. 5-10 dakika surebilir...
-call npm run eval:gemini
-if errorlevel 1 goto hata
-echo.
-echo   Demo videosu cekiliyor (Cypress). 1-2 dakika...
-call npm run demo
+echo   [4/4] Model kontrolu, 6 sozlesme, gizli talimat testi ve demo videosu.
+echo         Ucretsiz kota icin istekler arasinda bekleniyor; 10-15 dakika surebilir...
+node scripts\run-all.js
+if errorlevel 5 goto bitti_eksik
+if errorlevel 4 goto kota
+if errorlevel 3 goto anahtar_gecersiz
 if errorlevel 1 goto hata
 
 echo.
@@ -60,9 +64,30 @@ echo.
 pause
 exit /b 0
 
+:anahtar_gecersiz
+del .env >nul 2>nul
+if "%TRIED_KEY%"=="1" goto hata
+set TRIED_KEY=1
+echo.
+echo   Anahtar gecersiz. Yeni anahtari girin:
+goto key
+
+:kota
+echo.
+echo   Gemini su an yanit vermiyor (yogunluk veya gunluk ucretsiz kota).
+echo   Birkac saat sonra bu dosyayi tekrar acin; kaldigi yerden devam eder.
+pause
+exit /b 1
+
+:bitti_eksik
+echo.
+echo   Bazi adimlar tamamlanamadi. Yine de Claude'a "bitti" yazin;
+echo   sonuclara bakip ne yapilacagini soyleyecek.
+pause
+exit /b 1
+
 :hata
 echo.
 echo   Bir hata oldu. Bu pencerenin ekran goruntusunu Claude'a gonderin.
-echo   (Anahtar yanlissa: .env dosyasini silip bu dosyayi tekrar acin.)
 pause
 exit /b 1

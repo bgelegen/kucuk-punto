@@ -12,21 +12,23 @@ function systemSection(r) {
   const title = r.engine.mode === 'rules' ? 'Kural motoru (LLM yok, temel çizgi)' : `${r.engine.mode === 'llm-replay' ? 'LLM (kayıtlı yanıtlardan yeniden puanlandı)' : 'LLM'}: ${r.engine.provider} · ${r.engine.model}`;
   const L = [];
   L.push(`### ${title}`, '', `Çalıştırma: \`${r.date.slice(0, 16).replace('T', ' ')}\` · etiket \`${r.tag}\``, '');
-  L.push(`**Toplam:** kesinlik **${pct(r.precision)}**, duyarlılık **${pct(r.recall)}**, F1 **${pct(r.f1)}** · ${r.totals.findings} bulgu, ${r.totals.caught}/${r.totals.required} zorunlu nokta yakalandı, ${r.totals.false_alarms} yanlış alarm, ${r.totals.duplicates} tekrar, ${r.totals.optional_caught} isteğe bağlı nokta.`, '');
+  if (r.docs_failed) L.push(`> ⚠️ ${r.docs_failed} belgede model yanıt vermedi (sağlayıcı hatası). Bu belgeler aşağıda "model hatası" olarak gösterildi ve toplama **dahil edilmedi**; toplam ${r.docs_ok}/${r.docs.length} belge üzerindendir.`, '');
+  L.push(`**Toplam${r.docs_failed ? ` (${r.docs_ok}/${r.docs.length} belge)` : ''}:** kesinlik **${pct(r.precision)}**, duyarlılık **${pct(r.recall)}**, F1 **${pct(r.f1)}** · ${r.totals.findings} bulgu, ${r.totals.caught}/${r.totals.required} zorunlu nokta yakalandı, ${r.totals.false_alarms} yanlış alarm, ${r.totals.duplicates} tekrar, ${r.totals.optional_caught} isteğe bağlı nokta.`, '');
   L.push('| Belge | Skor | Bulgu | Yakalanan | Kaçırılan | Yanlış alarm | Tekrar | Kesinlik | Duyarlılık | Reddedilen iddia | Süre |', '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|');
   for (const d of r.docs) {
+    if (d.model_failed) { L.push(`| ${d.service} ${d.document} | — | model hatası: ${esc(d.error?.message || '').slice(0, 120)} |||||||||`); continue; }
     L.push(`| ${d.service} ${d.document} | ${d.score} | ${d.counts.findings} | ${d.counts.caught}/${d.counts.required} | ${d.counts.missed} | ${d.counts.false_alarms} | ${d.counts.duplicates} | ${pct(d.precision)} | ${pct(d.recall)} | ${d.rejected} | ${(d.ms / 1000).toFixed(1)} sn |`);
   }
   L.push('');
-  const errs = r.docs.filter(d => d.error);
-  if (errs.length) L.push(`> Hata: ${errs.map(d => `${d.doc}: ${d.error.message}`).join('; ')}`, '');
+
   if (r.engine.mode !== 'rules') {
-    const rej = r.docs.reduce((a, d) => { for (const [k, v] of Object.entries(d.rejected_reasons || {})) a[k] = (a[k] || 0) + v; return a; }, {});
+    const okDocs = r.docs.filter(d => !d.model_failed);
+    const rej = okDocs.reduce((a, d) => { for (const [k, v] of Object.entries(d.rejected_reasons || {})) a[k] = (a[k] || 0) + v; return a; }, {});
     const accepted = r.totals.findings;
     const totalRej = Object.values(rej).reduce((a, b) => a + b, 0);
     L.push(`**Kanıt doğrulama:** modelin ürettiği ${accepted + totalRej} iddiadan ${accepted} tanesinin alıntısı metinde bulundu (${pct(accepted / Math.max(1, accepted + totalRej))}); ${totalRej} iddia reddedildi ${totalRej ? '(' + Object.entries(rej).map(([k, v]) => `${k}: ${v}`).join(', ') + ')' : ''}.`);
-    L.push(`**Şema:** ${r.docs.filter(d => d.attempts === 1 && !d.schema_errors).length}/${r.docs.length} belgede ilk denemede geçerli JSON; onarım isteyen ${r.docs.filter(d => d.repaired).length}.`, '');
-    const ex = r.docs.flatMap(d => (d.rejected_examples || []).map(x => ({ ...x, doc: d.doc }))).slice(0, 6);
+    L.push(`**Şema:** ${okDocs.filter(d => d.attempts === 1 && !d.schema_errors).length}/${okDocs.length} belgede ilk denemede geçerli JSON; onarım isteyen ${okDocs.filter(d => d.repaired).length}.`, '');
+    const ex = okDocs.flatMap(d => (d.rejected_examples || []).map(x => ({ ...x, doc: d.doc }))).slice(0, 6);
     if (ex.length) {
       L.push('<details><summary>Reddedilen iddia örnekleri</summary>', '', '| Belge | Neden | Kategori | Modelin alıntısı |', '|---|---|---|---|');
       for (const x of ex) L.push(`| ${x.doc} | ${x.reason} | ${x.category || '—'} | ${esc(x.quote)} |`);
@@ -34,10 +36,10 @@ function systemSection(r) {
     }
   }
   L.push('<details><summary>Kaçırılan noktalar</summary>', '', '| Belge | Nokta | Kategori | Önem | Açıklama |', '|---|---|---|---|---|');
-  for (const d of r.docs) for (const m of d.missed) L.push(`| ${d.doc} | ${m.id} | ${CATEGORIES[m.category].tr} | ${m.severity} | ${esc(m.note_tr)} |`);
+  for (const d of r.docs.filter(x => !x.model_failed)) for (const m of d.missed) L.push(`| ${d.doc} | ${m.id} | ${CATEGORIES[m.category].tr} | ${m.severity} | ${esc(m.note_tr)} |`);
   L.push('', '</details>', '');
   L.push('<details><summary>Yanlış alarmlar</summary>', '', '| Belge | Kategori | Alıntı |', '|---|---|---|');
-  for (const d of r.docs) for (const f of d.false_alarms) L.push(`| ${d.doc} | ${CATEGORIES[f.category].tr} | ${esc(f.quote)} |`);
+  for (const d of r.docs.filter(x => !x.model_failed)) for (const f of d.false_alarms) L.push(`| ${d.doc} | ${CATEGORIES[f.category].tr} | ${esc(f.quote)} |`);
   L.push('', '</details>', '');
   return L.join('\n');
 }
@@ -57,9 +59,9 @@ function datasetSection() {
 }
 
 function categorySection(runs) {
-  const L = ['### Kategori bazında duyarlılık', '', '| Kategori | Zorunlu nokta | ' + runs.map(r => r.engine.mode === 'rules' ? 'Kurallar' : r.engine.model).join(' | ') + ' |', '|---|---:|' + runs.map(() => '---:').join('|') + '|'];
+  const L = ['### Kategori bazında duyarlılık', '', ...(runs.some(r => r.docs_failed) ? ['Model hatası olan belgeler bu tabloda yakalanmamış sayılır.', ''] : []), '| Kategori | Zorunlu nokta | ' + runs.map(r => r.engine.mode === 'rules' ? 'Kurallar' : r.engine.model).join(' | ') + ' |', '|---|---:|' + runs.map(() => '---:').join('|') + '|'];
   const gold = {};
-  for (const r of runs) for (const d of r.docs) for (const id of d.caught) (gold[r.tag] ||= new Set()).add(d.doc + ':' + id);
+  for (const r of runs) for (const d of r.docs) if (!d.model_failed) for (const id of d.caught) (gold[r.tag] ||= new Set()).add(d.doc + ':' + id);
   const pointsByCat = {};
   const first = runs[0];
   for (const d of first.docs) {
@@ -72,15 +74,30 @@ function categorySection(runs) {
   return L.join('\n') + '\n';
 }
 
+// Recompute every run from its per-document rows, so older result files (written before
+// failed documents were flagged) cannot present a rules fallback as a model result.
+function normalizeRun(r) {
+  if (r.engine.mode === 'rules') return r;
+  const docs = r.docs.map(d => ({ ...d, model_failed: d.model_failed ?? !!(d.error && d.error.code !== 'SCHEMA') }));
+  const ok = docs.filter(d => !d.model_failed);
+  const totals = ok.reduce((a, d) => { for (const k of Object.keys(d.counts)) a[k] = (a[k] || 0) + d.counts[k]; return a; }, { findings: 0, required: 0, caught: 0, missed: 0, false_alarms: 0, duplicates: 0, optional_caught: 0 });
+  const precision = totals.findings ? (totals.findings - totals.false_alarms) / totals.findings : null;
+  const recall = totals.required ? totals.caught / totals.required : null;
+  const f1 = precision != null && recall != null && precision + recall ? 2 * precision * recall / (precision + recall) : null;
+  return { ...r, docs, docs_ok: ok.length, docs_failed: docs.length - ok.length, totals, precision, recall, f1 };
+}
+
 export function writeEvalMarkdown() {
   const dir = path.join(EVAL_DIR, 'results');
   const runs = fs.readdirSync(dir).filter(f => f.endsWith('.json') && f !== 'injection.json').map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')))
+    .map(normalizeRun)
+    .filter(r => r.docs_ok !== 0)   // a run where the model never answered says nothing about the system
     .sort((a, b) => (a.engine.mode === 'rules' ? -1 : 1) - (b.engine.mode === 'rules' ? -1 : 1) || a.tag.localeCompare(b.tag));
   const header = fs.readFileSync(path.join(EVAL_DIR, 'EVAL.header.md'), 'utf8');
   const parts = [header.trim(), '', datasetSection(), '## Sonuçlar', ''];
   if (runs.length > 1) {
     parts.push('| Sistem | Kesinlik | Duyarlılık | F1 | Bulgu | Yanlış alarm |', '|---|---:|---:|---:|---:|---:|');
-    for (const r of runs) parts.push(`| ${r.engine.mode === 'rules' ? 'Kurallar' : r.engine.model} | ${pct(r.precision)} | ${pct(r.recall)} | ${pct(r.f1)} | ${r.totals.findings} | ${r.totals.false_alarms} |`);
+    for (const r of runs) parts.push(`| ${r.engine.mode === 'rules' ? 'Kurallar' : r.engine.model}${r.docs_failed ? ` (${r.docs_ok}/${r.docs.length} belge)` : ''} | ${pct(r.precision)} | ${pct(r.recall)} | ${pct(r.f1)} | ${r.totals.findings} | ${r.totals.false_alarms} |`);
     parts.push('');
   }
   if (!runs.some(r => r.engine.mode !== 'rules')) {
@@ -131,7 +148,11 @@ function injectionSection(j) {
   if (!real.length) L.push('> Henüz çalıştırılmadı. Kendi anahtarınızla: `node eval/injection.js --provider gemini`', '');
   for (const run of real) {
     L.push(`**${run.provider} · ${run.model}** (${run.date.slice(0, 10)})`, '', '| Sayfa | Saf: skor / bulgu | Küçük Punto: skor / bulgu | Modelin kendisi enjeksiyon bildirdi | Belirsiz uyarısı |', '|---|---:|---:|---:|---|');
-    for (const r of run.rows) L.push(`| ${esc(r.variant_tr)} | ${r.naive.score ?? r.naive.error} / ${r.naive.shown ?? '—'} | ${r.ours.shown_score} / ${r.ours.shown} | ${r.ours.model_reported} | ${r.ours.conflict ? 'Evet' : 'Hayır'} |`);
+    for (const r of run.rows) {
+      const naive = r.naive.error ? `model hatası` : `${r.naive.score} / ${r.naive.shown}`;
+      const ours = r.ours.model_error ? `model hatası (${esc(r.ours.model_error).slice(0, 80)})` : `${r.ours.shown_score} / ${r.ours.shown}`;
+      L.push(`| ${esc(r.variant_tr)} | ${naive} | ${ours} | ${r.ours.model_error ? '—' : r.ours.model_reported} | ${r.ours.model_error ? '—' : r.ours.conflict ? 'Evet' : 'Hayır'} |`);
+    }
     L.push('');
   }
   return L.join('\n');

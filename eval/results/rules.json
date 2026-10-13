@@ -1,9 +1,12 @@
 {
   "tag": "rules",
   "engine": {
-    "mode": "rules"
+    "mode": "rules",
+    "prompt_version": "2026-10-13.1"
   },
-  "date": "2026-10-13T15:38:10.573Z",
+  "date": "2026-10-13T17:25:53.730Z",
+  "docs_ok": 6,
+  "docs_failed": 0,
   "totals": {
     "findings": 257,
     "required": 62,
@@ -20,6 +23,8 @@
   "f1": 0.6829935695717609,
   "docs": [
     {
+      "model_failed": false,
+      "cached": false,
       "doc": "netflix-tos",
       "service": "Netflix",
       "document": "Terms of Service",
@@ -29,7 +34,7 @@
       "error": null,
       "score": 80,
       "band": "high",
-      "ms": 37,
+      "ms": 51,
       "attempts": 0,
       "repaired": false,
       "schema_errors": 0,
@@ -113,6 +118,8 @@
       ]
     },
     {
+      "model_failed": false,
+      "cached": false,
       "doc": "spotify-tos",
       "service": "Spotify",
       "document": "Terms of Service",
@@ -122,7 +129,7 @@
       "error": null,
       "score": 96,
       "band": "high",
-      "ms": 48,
+      "ms": 67,
       "attempts": 0,
       "repaired": false,
       "schema_errors": 0,
@@ -596,6 +603,8 @@
       ]
     },
     {
+      "model_failed": false,
+      "cached": false,
       "doc": "grammarly-tos",
       "service": "Grammarly",
       "document": "Terms of Service",
@@ -605,7 +614,7 @@
       "error": null,
       "score": 94,
       "band": "high",
-      "ms": 48,
+      "ms": 58,
       "attempts": 0,
       "repaired": false,
       "schema_errors": 0,
@@ -972,6 +981,8 @@
       ]
     },
     {
+      "model_failed": false,
+      "cached": false,
       "doc": "signal-tos",
       "service": "Signal",
       "document": "Terms of Service",
@@ -981,7 +992,7 @@
       "error": null,
       "score": 81,
       "band": "high",
-      "ms": 8,
+      "ms": 10,
       "attempts": 0,
       "repaired": false,
       "schema_errors": 0,
@@ -1069,6 +1080,8 @@
       ]
     },
     {
+      "model_failed": false,
+      "cached": false,
       "doc": "reddit-privacy",
       "service": "Reddit",
       "document": "Privacy Policy",
@@ -1078,7 +1091,7 @@
       "error": null,
       "score": 81,
       "band": "high",
-      "ms": 23,
+      "ms": 33,
       "attempts": 0,
       "repaired": false,
       "schema_errors": 0,
@@ -1272,6 +1285,8 @@
       ]
     },
     {
+      "model_failed": false,
+      "cached": false,
       "doc": "telegram-privacy",
       "service": "Telegram",
       "document": "Privacy Policy",
@@ -1281,7 +1296,7 @@
       "error": null,
       "score": 63,
       "band": "high",
-      "ms": 16,
+      "ms": 22,
       "attempts": 0,
       "repaired": false,
       "schema_errors": 0,

@@ -19,6 +19,7 @@ import { build } from './build.js';
 import { loadDotEnv, settingsFromEnv, ROOT, isMain } from './env.js';
 import { handleAnalyze, isConfigured, resolveLLMConfig } from '../src/background/handler.js';
 import { mockLLM, MOCK_MODEL } from './mock-llm.js';
+import { pickModel } from './pick-model.js';
 
 const SITE = path.join(ROOT, 'site');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' };
@@ -29,6 +30,11 @@ export async function startHarness({ port = Number(process.env.KP_PORT || 5173),
   await build({ quiet: true });
   const settings = settingsFromEnv();
   const useMock = !!mockMode || process.env.KP_MOCK === '1' || !isConfigured(settings);
+  if (!useMock && settings.provider === 'gemini' && !settings.model) {
+    // pick a Gemini model that answers right now (free models are often overloaded)
+    const pick = await pickModel({ provider: 'gemini', apiKey: settings.apiKey, baseUrl: settings.baseUrl, log: quiet ? () => {} : console.log });
+    if (pick.model) settings.model = pick.model;
+  }
   const mode = mockMode || process.env.KP_MOCK_MODE || 'helpful';
   const engine = useMock ? `mock (${MOCK_MODEL}:${mode})` : `${resolveLLMConfig(settings).provider} · ${resolveLLMConfig(settings).model}`;
 
@@ -42,7 +48,7 @@ export async function startHarness({ port = Number(process.env.KP_PORT || 5173),
         const body = await readBody(req, 4_000_000);
         const t0 = Date.now();
         const result = await handleAnalyze(JSON.parse(body), {
-          settings, randomBytes: n => crypto.randomBytes(n),
+          settings, randomBytes: n => crypto.randomBytes(n), retry: { retries: 3, maxWaitMs: 45000 },
           llmOverride: useMock ? { llm: mockLLM(mode), provider: 'mock', model: `${MOCK_MODEL}:${mode}` } : null
         });
         if (!quiet) {
