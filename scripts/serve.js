@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { build } from './build.js';
-import { loadDotEnv, settingsFromEnv, ROOT } from './env.js';
+import { loadDotEnv, settingsFromEnv, ROOT, isMain } from './env.js';
 import { handleAnalyze, isConfigured, resolveLLMConfig } from '../src/background/handler.js';
 import { mockLLM, MOCK_MODEL } from './mock-llm.js';
 
@@ -77,4 +77,4 @@ function readBody(req, max) {
   });
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) startHarness(process.argv.includes('--mock') ? { mockMode: 'helpful' } : {});
+if (isMain(import.meta.url)) startHarness(process.argv.includes('--mock') ? { mockMode: 'helpful' } : {});

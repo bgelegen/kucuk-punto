@@ -13,6 +13,7 @@
 import http from 'node:http';
 import { runBaseline } from '../src/core/baseline.js';
 import { CATEGORIES } from '../src/core/taxonomy.js';
+import { isMain } from './env.js';
 
 export const MOCK_MODEL = 'kp-mock-1';
 
@@ -103,7 +104,7 @@ export function startMockServer(port = 0, mode = 'helpful') {
   return new Promise(r => server.listen(port, '127.0.0.1', () => r(server)));
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   const port = Number(process.argv[2] || 8788), mode = process.argv[3] || 'helpful';
   startMockServer(port, mode).then(() => console.log(`mock LLM (${mode}) on http://127.0.0.1:${port}/v1`));
 }

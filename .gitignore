@@ -5,8 +5,6 @@ node_modules/
 cypress/videos/
 cypress/screenshots/
 cypress/downloads/
-eval/results/raw/*/
-!eval/results/raw/.gitkeep
 *.log
 .DS_Store
 site/_kp/

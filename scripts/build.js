@@ -4,6 +4,7 @@ import * as esbuild from 'esbuild';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isMain } from './env.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const common = { bundle: true, target: 'chrome116', charset: 'utf8', legalComments: 'none', logLevel: 'warning', minify: false };
@@ -27,4 +28,4 @@ export async function build({ quiet = false } = {}) {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) build().catch(e => { console.error(e.message); process.exit(1); });
+if (isMain(import.meta.url)) build().catch(e => { console.error(e.message); process.exit(1); });

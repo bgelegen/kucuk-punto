@@ -5,6 +5,13 @@ import { fileURLToPath } from 'node:url';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
+/** true when the module at metaUrl was started with `node <file>` (works on Windows paths too) */
+export function isMain(metaUrl) {
+  if (!process.argv[1]) return false;
+  const a = path.resolve(fileURLToPath(metaUrl)), b = path.resolve(process.argv[1]);
+  return process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
+}
+
 export function loadDotEnv(file = path.join(ROOT, '.env')) {
   if (!fs.existsSync(file)) return false;
   for (const line of fs.readFileSync(file, 'utf8').split('\n')) {

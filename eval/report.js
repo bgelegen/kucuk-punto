@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { EVAL_DIR } from './lib/corpus.js';
 import { CATEGORIES } from '../src/core/taxonomy.js';
+import { isMain } from '../scripts/env.js';
 
 const pct = v => v == null ? '—' : (v * 100).toFixed(1) + '%';
 const esc = s => String(s).replace(/\|/g, '\\|').replace(/\n/g, ' ');
@@ -136,4 +137,4 @@ function injectionSection(j) {
   return L.join('\n');
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) writeEvalMarkdown();
+if (isMain(import.meta.url)) writeEvalMarkdown();
