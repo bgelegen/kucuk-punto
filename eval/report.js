@@ -92,6 +92,7 @@ export function writeEvalMarkdown() {
   const runs = fs.readdirSync(dir).filter(f => f.endsWith('.json') && f !== 'injection.json').map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')))
     .map(normalizeRun)
     .filter(r => r.docs_ok !== 0)   // a run where the model never answered says nothing about the system
+    .filter((r, _, all) => !(r.docs_failed && all.some(x => x.engine.mode === 'llm' && x.engine.provider === r.engine.provider && x.docs_failed === 0 && x.docs_ok > 0)))   // a partial run is shown only until a complete one exists
     .sort((a, b) => (a.engine.mode === 'rules' ? -1 : 1) - (b.engine.mode === 'rules' ? -1 : 1) || a.tag.localeCompare(b.tag));
   const header = fs.readFileSync(path.join(EVAL_DIR, 'EVAL.header.md'), 'utf8');
   const parts = [header.trim(), '', datasetSection(), '## Sonuçlar', ''];

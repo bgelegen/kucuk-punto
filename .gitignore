@@ -8,3 +8,4 @@ cypress/downloads/
 *.log
 .DS_Store
 site/_kp/
+cypress/.harness-error.json

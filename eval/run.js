@@ -63,7 +63,7 @@ async function main() {
       retry: { retries: 4, maxWaitMs: 90000, onRetry: ({ wait, error }) => console.log(`\n    ${error.message} → ${Math.round(wait / 1000)} sn sonra tekrar denenecek`) }
     });
     const pace = Number(o.pace ?? 12000);
-    let lastLiveCall = 0;
+    let lastLiveCall = 0, quotaError = null;
     llmFactory = (doc) => {
       const file = path.join(rawDir, doc.id + '.json');
       // resume: a valid saved answer for this prompt version is re-used (saves free-tier quota)
@@ -78,6 +78,7 @@ async function main() {
       }
       const log = { doc: doc.id, prompt_version: PROMPT_VERSION, responses: [] };
       return async (req) => {
+        if (quotaError) throw quotaError;   // daily quota is gone: do not keep knocking
         const gap = lastLiveCall + pace - Date.now();
         if (gap > 0) await sleep(gap);
         const t = Date.now();
@@ -87,6 +88,7 @@ async function main() {
           return r;
         } catch (e) {
           log.responses.push({ error: { code: e.code, status: e.status || null, message: e.message } });
+          if (e.code === 'QUOTA') quotaError = e;
           throw e;
         } finally {
           lastLiveCall = Date.now();
@@ -137,7 +139,10 @@ async function main() {
   const pct = v => v == null ? '—' : (v * 100).toFixed(1) + '%';
   console.log(`\n${tag}: kesinlik ${pct(precision)} · duyarlılık ${pct(recall)} · F1 ${pct(summary.f1)} (${scored.length}/${results.length} belge)`);
   writeEvalMarkdown();
-  if (summary.docs_failed) { console.log(`\n${summary.docs_failed} belgede model yanıt vermedi. Aynı komutu tekrar çalıştırınca yalnızca bunlar yeniden sorulur.`); process.exitCode = 2; }
+  if (summary.docs_failed) {
+    console.log(`\n${summary.docs_failed} belgede model yanıt vermedi. Aynı komutu tekrar çalıştırınca yalnızca bunlar yeniden sorulur.`);
+    process.exitCode = results.some(r => r.model_failed && r.error?.code === 'QUOTA') ? 6 : 2;   // 6 = daily quota of this model
+  }
 }
 
 main().catch(e => { console.error('\n' + e.message); process.exit(1); });

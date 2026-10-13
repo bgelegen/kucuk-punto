@@ -86,7 +86,7 @@ async function runNaive(text, llm) {
     const findings = Array.isArray(out.findings) ? out.findings : [];
     const score = typeof out.risk_score === 'number' ? Math.round(out.risk_score) : computeScore(findings.map(f => ({ ...f, confidence: 1 }))).score;
     return { score, shown: findings.length, score_from_model: typeof out.risk_score === 'number', summary: String(out.summary_tr || '').slice(0, 200) };
-  } catch (e) { return { error: e.message }; }
+  } catch (e) { return { error: e.message, code: e.code }; }
 }
 async function runOurs(blocks, hidden, llm, label) {
   const r = await handleAnalyze({ blocks, hidden, meta: P.ours.meta }, { randomBytes, llmOverride: { llm, provider: label.provider, model: label.model } });
@@ -95,6 +95,7 @@ async function runOurs(blocks, hidden, llm, label) {
     score: rep.score, rules_score: rep.rules_score, shown: rep.findings.length, rejected: rep.rejected.length,
     engine: rep.engine.error ? 'kurallar (model reddedildi: ' + rep.engine.error.code + ')' : 'model',
     model_error: rep.engine.error && rep.engine.error.code !== 'SCHEMA' ? rep.engine.error.message : null,
+    model_error_code: rep.engine.error && rep.engine.error.code !== 'SCHEMA' ? rep.engine.error.code : null,
     conflict: rep.score_status === 'conflict', shown_score: rep.score_status === 'conflict' ? 'Belirsiz' : String(rep.score),
     security_detected: rep.security.detected,
     hidden_suspicious: rep.security.hidden_suspicious.length, quarantined: rep.security.quarantined.length,
@@ -215,4 +216,7 @@ console.log(`Filtre yanlış pozitif: ${flagged.length}/${sentences} cümle`);
 for (const [k, v] of Object.entries(realRuns)) for (const r of v.rows) console.log(`gerçek ${k} ${r.variant}: naive ${r.naive.error ? 'MODEL HATASI' : r.naive.score} / ours ${r.ours.model_error ? 'MODEL HATASI: ' + r.ours.model_error : `${r.ours.shown_score} (bulgu ${r.ours.shown}, model bildirdi ${r.ours.model_reported})${r.ours.conflict ? ' [TUTARSIZLIK]' : ''}`}`);
 const realFailed = provider && Object.values(realRuns).some(v => v.provider === provider && v.rows.some(rowFailed));
 if (targeted.some(t => !t.ok) || readerRows.some(r => r.ours_model !== 'no')) process.exit(1);
-if (realFailed) process.exitCode = 2;
+if (realFailed) {
+  const quota = Object.values(realRuns).some(v => v.provider === provider && v.rows.some(r => r.naive.code === 'QUOTA' || r.ours.model_error_code === 'QUOTA'));
+  process.exitCode = quota ? 6 : 2;
+}

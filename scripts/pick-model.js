@@ -8,10 +8,10 @@ export const GEMINI_CANDIDATES = ['gemini-flash-latest', 'gemini-2.5-flash', 'ge
 /**
  * @returns {Promise<{model:string|null, tried:{model,ok,code?,message?}[], authError:boolean}>}
  */
-export async function pickModel({ provider = 'gemini', apiKey, baseUrl, model, fetchImpl = globalThis.fetch, log = () => {} } = {}) {
+export async function pickModel({ provider = 'gemini', apiKey, baseUrl, model, exclude = [], fetchImpl = globalThis.fetch, log = () => {} } = {}) {
   const preset = PRESETS[provider];
   if (!preset) throw new Error('Bilinmeyen sağlayıcı: ' + provider);
-  const candidates = model ? [model] : provider === 'gemini' ? GEMINI_CANDIDATES : [preset.model];
+  const candidates = (model ? [model] : provider === 'gemini' ? GEMINI_CANDIDATES : [preset.model]).filter(m => !exclude.includes(m));
   const tried = [];
   for (const m of candidates) {
     const llm = makeLLM({ ...preset, structured: preset.kind === 'openai' ? 'json_object' : preset.structured, baseUrl: baseUrl || preset.baseUrl, model: m, apiKey }, fetchImpl,

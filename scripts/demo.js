@@ -7,6 +7,8 @@ import { ROOT, loadDotEnv } from './env.js';
 
 loadDotEnv();
 const t0 = Date.now();
+const statusFile = path.join(ROOT, 'cypress', '.harness-error.json');
+fs.rmSync(statusFile, { force: true });
 const run = spawnSync('npx', ['cypress', 'run', '--e2e', '--browser', 'electron', '--spec', 'cypress/e2e/demo.cy.js'], { cwd: ROOT, stdio: 'inherit', shell: process.platform === 'win32' });
 const video = path.join(ROOT, 'cypress/videos/demo.cy.js.mp4');
 if (!fs.existsSync(video)) { console.error('Video bulunamadı: ' + video); process.exit(run.status || 1); }
@@ -16,7 +18,11 @@ const sec = mp4Seconds(fs.readFileSync(video)) ?? (Date.now() - t0) / 1000;
 console.log(`\n${run.status === 0 ? 'docs/demo.mp4' : 'cypress/videos/demo.cy.js.mp4'} · ${sec.toFixed(1)} sn`);
 if (run.status !== 0) console.log('⚠️  Cypress testi başarısız oldu; bu video teslim için kullanılmamalı.');
 if (sec > 90) console.log('⚠️  90 saniyeyi aşıyor. Daha hızlı model deneyin: KP_MODEL=gemini-flash-lite-latest npm run demo');
-process.exit(run.status ?? 0);
+// tell run-all whether the model ran out of daily quota during the recording (exit 6 -> try another model)
+let harnessError = null;
+try { harnessError = JSON.parse(fs.readFileSync(statusFile, 'utf8')); } catch { /* no error recorded */ }
+if (run.status !== 0 && harnessError) console.log(`Kayıt sırasında model hatası: ${harnessError.code} (${harnessError.model})`);
+process.exit(run.status !== 0 && harnessError?.code === 'QUOTA' ? 6 : (run.status ?? 0));
 
 /** duration from the mp4 'mvhd' box (no ffprobe needed) */
 function mp4Seconds(buf) {

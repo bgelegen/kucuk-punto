@@ -61,15 +61,15 @@ Metinler [Open Terms Archive](https://opentermsarchive.org/) projesinin arşivin
 
 ### Kural motoru (LLM yok, temel çizgi)
 
-Çalıştırma: `2026-10-13 17:25` · etiket `rules`
+Çalıştırma: `2026-10-13 17:45` · etiket `rules`
 
 **Toplam:** kesinlik **74.7%**, duyarlılık **62.9%**, F1 **68.3%** · 257 bulgu, 39/62 zorunlu nokta yakalandı, 65 yanlış alarm, 144 tekrar, 9 isteğe bağlı nokta.
 
 | Belge | Skor | Bulgu | Yakalanan | Kaçırılan | Yanlış alarm | Tekrar | Kesinlik | Duyarlılık | Reddedilen iddia | Süre |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Netflix Terms of Service | 80 | 10 | 3/5 | 2 | 4 | 2 | 60.0% | 60.0% | 0 | 0.1 sn |
-| Spotify Terms of Service | 96 | 109 | 13/17 | 4 | 10 | 85 | 90.8% | 76.5% | 0 | 0.1 sn |
-| Grammarly Terms of Service | 94 | 74 | 8/14 | 6 | 17 | 46 | 77.0% | 57.1% | 0 | 0.1 sn |
+| Netflix Terms of Service | 80 | 10 | 3/5 | 2 | 4 | 2 | 60.0% | 60.0% | 0 | 0.0 sn |
+| Spotify Terms of Service | 96 | 109 | 13/17 | 4 | 10 | 85 | 90.8% | 76.5% | 0 | 0.0 sn |
+| Grammarly Terms of Service | 94 | 74 | 8/14 | 6 | 17 | 46 | 77.0% | 57.1% | 0 | 0.0 sn |
 | Signal Terms of Service | 81 | 12 | 5/7 | 2 | 3 | 4 | 75.0% | 71.4% | 0 | 0.0 sn |
 | Reddit Privacy Policy | 81 | 36 | 9/12 | 3 | 17 | 7 | 52.8% | 75.0% | 0 | 0.0 sn |
 | Telegram Privacy Policy | 63 | 16 | 1/7 | 6 | 14 | 0 | 12.5% | 14.3% | 0 | 0.0 sn |

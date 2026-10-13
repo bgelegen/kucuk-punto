@@ -51,6 +51,9 @@ export async function startHarness({ port = Number(process.env.KP_PORT || 5173),
           settings, randomBytes: n => crypto.randomBytes(n), retry: { retries: 3, maxWaitMs: 45000 },
           llmOverride: useMock ? { llm: mockLLM(mode), provider: 'mock', model: `${MOCK_MODEL}:${mode}` } : null
         });
+        if (result.ok && result.report.engine.error) {
+          try { fs.writeFileSync(path.join(ROOT, 'cypress', '.harness-error.json'), JSON.stringify({ code: result.report.engine.error.code, model: settings.model })); } catch { /* ignore */ }
+        }
         if (!quiet) {
           const r = result.report;
           console.log(result.ok ? `  analiz: ${r.meta.title.slice(0, 40)} → skor ${r.score}, ${r.findings.length} bulgu, ${r.rejected.length} red, ${r.uncertain.length} belirsiz, güvenlik ${r.security.detected ? 'UYARI' : 'temiz'} (${Date.now() - t0} ms)` : `  hata: ${result.error.code}`);
