@@ -31,13 +31,23 @@ if (!process.env.KP_API_KEY) { console.log('\n  API anahtarı bulunamadı (.env)
 const exhausted = [];
 let model = null;
 
+const WAIT_ROUNDS = Number(process.env.KP_WAIT_ROUNDS ?? 6), WAIT_MS = Number(process.env.KP_WAIT_MS ?? 60000);
+
 async function choose() {
-  console.log('\n  Model kontrol ediliyor...');
-  const pick = await pickModel({ provider, apiKey: process.env.KP_API_KEY, baseUrl: process.env.KP_BASE_URL, model: process.env.KP_MODEL_FIXED, exclude: exhausted, log: console.log });
-  if (pick.authError) { console.log('\n  Anahtar geçersiz görünüyor.'); process.exit(3); }
+  let pick;
+  for (let round = 0; ; round++) {
+    console.log('\n  Model kontrol ediliyor...');
+    pick = await pickModel({ provider, apiKey: process.env.KP_API_KEY, baseUrl: process.env.KP_BASE_URL, model: process.env.KP_MODEL_FIXED, exclude: exhausted, log: console.log });
+    if (pick.authError) { console.log('\n  Anahtar geçersiz görünüyor.'); process.exit(3); }
+    for (const t of pick.tried) if (['QUOTA', 'MODEL'].includes(t.code) && !exhausted.includes(t.model)) exhausted.push(t.model);   // no point asking again today
+    // "high demand" is temporary: wait a little instead of giving up
+    if (pick.model || !pick.overloaded || round >= WAIT_ROUNDS) break;
+    console.log(`\n  Modeller şu an yoğun. ${Math.round(WAIT_MS / 1000)} sn sonra tekrar denenecek (${round + 1}/${WAIT_ROUNDS})...`);
+    await new Promise(r => setTimeout(r, WAIT_MS));
+  }
   if (!pick.model) {
     console.log(`\n  Şu an kullanılabilir Gemini modeli kalmadı${exhausted.length ? ` (günlük kotası dolanlar: ${exhausted.join(', ')})` : ''}.`);
-    console.log('  Ücretsiz kota her gün Türkiye saatiyle 10:00 civarında yenilenir.');
+    console.log(pick.overloaded ? '  Modeller hâlâ yoğun. Biraz sonra calistir dosyasını tekrar açın.' : '  Ücretsiz kota her gün Türkiye saatiyle 10:00 civarında yenilenir.');
     return null;
   }
   console.log(`  Kullanılacak model: ${pick.model}`);
