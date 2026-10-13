@@ -17,7 +17,7 @@ export async function pickModel({ provider = 'gemini', apiKey, baseUrl, model, e
   for (let i = 0; i < candidates.length; i++) {
     const m = candidates[i];
     const llm = makeLLM({ ...preset, structured: preset.kind === 'openai' ? 'json_object' : preset.structured, baseUrl: baseUrl || preset.baseUrl, model: m, apiKey }, fetchImpl,
-      { timeoutMs: 30000, retry: { retries: 1, maxWaitMs: 20000 } });
+      { timeoutMs: 45000, retry: { retries: 1, maxWaitMs: 20000 } });
     try {
       await llm({ system: 'Reply with the JSON object {"ok": true} and nothing else.', turns: [{ role: 'user', content: 'ping' }] });
       tried.push({ model: m, ok: true });
@@ -34,5 +34,6 @@ export async function pickModel({ provider = 'gemini', apiKey, baseUrl, model, e
       if (next && !candidates.includes(next) && !exclude.includes(next)) { candidates.splice(i + 1, 0, next); log(`    → önerilen yeni model denenecek: ${next}`); }
     }
   }
-  return { model: null, tried, authError: false, overloaded: tried.some(t => t.code === 'UPSTREAM' || t.code === 'RATE') };
+  // not answering in time is overload too (seen with free lite models): worth waiting for
+  return { model: null, tried, authError: false, overloaded: tried.some(t => ['UPSTREAM', 'RATE', 'TIMEOUT'].includes(t.code)) };
 }
