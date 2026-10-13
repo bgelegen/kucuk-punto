@@ -1,0 +1,230 @@
+{
+  "doc": "spotify-tos",
+  "points": [
+    {
+      "id": "SP1",
+      "category": "dispute_waiver",
+      "severity": "high",
+      "note_tr": "Zorunlu bireysel tahkim; mahkeme yerine tahkim.",
+      "evidence": [
+        "THESE TERMS CONTAIN A MANDATORY ARBITRATION PROVISION",
+        "will be determined by binding individual (not class) arbitration",
+        "This Arbitration Agreement section sets forth the terms and conditions pursuant to which Disputes",
+        "If in the process of arbitrating or litigating a Dispute this Arbitration Agreement is invalidated"
+      ],
+      "scope": [
+        {
+          "from": "This Arbitration Agreement section sets forth the terms and conditions",
+          "to": "Either party may participate in a class-wide settlement."
+        }
+      ]
+    },
+    {
+      "id": "SP2",
+      "category": "dispute_waiver",
+      "severity": "high",
+      "note_tr": "Toplu dava ve jüri hakkından feragat.",
+      "evidence": [
+        "each party may bring claims (whether in court or in arbitration) against the other only in an individual capacity",
+        "YOU AND SPOTIFY AGREE THAT EACH MAY BRING CLAIMS AGAINST THE OTHER IN ARBITRATION OR LITIGATION ONLY IN YOUR OR ITS INDIVIDUAL CAPACITY",
+        "the parties agree to waive any right to a jury trial"
+      ],
+      "scope": [
+        {
+          "from": "This Arbitration Agreement section sets forth the terms and conditions",
+          "to": "Either party may participate in a class-wide settlement."
+        }
+      ]
+    },
+    {
+      "id": "SP3",
+      "category": "dispute_waiver",
+      "severity": "medium",
+      "optional": true,
+      "note_tr": "Toplu tahkimde aşamalı süreç davayı geciktirebilir.",
+      "evidence": [
+        "all of the cases must be resolved in arbitration through staged sets of proceedings"
+      ]
+    },
+    {
+      "id": "SP4",
+      "category": "unilateral_change",
+      "severity": "medium",
+      "note_tr": "Hizmet ve içerik bildirimsiz değiştirilebilir veya kaldırılabilir.",
+      "evidence": [
+        "Spotify reserves the right to change our Spotify Service offerings and their availability from time to time, without notice or liability to you."
+      ]
+    },
+    {
+      "id": "SP5",
+      "category": "liability_limit",
+      "severity": "low",
+      "note_tr": "Hizmet \"olduğu gibi\" sunulur, garanti yok.",
+      "evidence": [
+        "THE SPOTIFY SERVICE IS PROVIDED \"AS IS\" AND \"AS AVAILABLE,\" WITHOUT ANY WARRANTIES OF ANY KIND"
+      ]
+    },
+    {
+      "id": "SP6",
+      "category": "liability_limit",
+      "severity": "medium",
+      "note_tr": "Zararlar hariç tutulur, toplam sorumluluk 30 dolar veya 12 aylık ödemeyle sınırlı; tek çözüm kullanmayı bırakmak.",
+      "evidence": [
+        "AGGREGATE LIABILITY FOR ALL CLAIMS RELATING TO THE SPOTIFY SERVICE",
+        "YOUR SOLE AND EXCLUSIVE REMEDY FOR ANY PROBLEMS OR DISSATISFACTION WITH THE SPOTIFY SERVICE IS TO UNINSTALL",
+        "Spotify has no liability to you, nor any obligation to provide a refund to you, in connection with internet or other Spotify Service outages"
+      ]
+    },
+    {
+      "id": "SP7",
+      "category": "liability_limit",
+      "severity": "medium",
+      "note_tr": "Talepler bir yıl içinde açılmalı.",
+      "also": [
+        "dispute_waiver"
+      ],
+      "evidence": [
+        "ANY CLAIM ARISING UNDER THESE TERMS MUST BE COMMENCED"
+      ]
+    },
+    {
+      "id": "SP8",
+      "category": "price_change",
+      "severity": "medium",
+      "note_tr": "Abonelik ücreti değiştirilebilir; devam etmek kabul sayılır.",
+      "evidence": [
+        "Spotify may from time to time make changes to Paid Subscriptions, including recurring subscription fees"
+      ]
+    },
+    {
+      "id": "SP9",
+      "category": "auto_renewal",
+      "severity": "medium",
+      "note_tr": "Abonelik iptal edilene kadar süresiz devam eder.",
+      "evidence": [
+        "Paid Subscriptions continue indefinitely until cancelled."
+      ]
+    },
+    {
+      "id": "SP10",
+      "category": "cancellation_refund",
+      "severity": "high",
+      "note_tr": "Kısmi dönem için iade yok.",
+      "evidence": [
+        "we do not provide refunds or credits for any partial subscription periods"
+      ]
+    },
+    {
+      "id": "SP11",
+      "category": "cancellation_refund",
+      "severity": "medium",
+      "note_tr": "Hesap kapatılırsa ödenmiş tutarlar iade edilmez.",
+      "also": [
+        "account_termination"
+      ],
+      "evidence": [
+        "Spotify will not refund any amounts that you have already paid"
+      ]
+    },
+    {
+      "id": "SP12",
+      "category": "account_termination",
+      "severity": "medium",
+      "note_tr": "Spotify sözleşmeyi feshedebilir veya erişimi askıya alabilir.",
+      "evidence": [
+        "Spotify may terminate these Terms (including any additional terms and conditions incorporated herein) or suspend your access"
+      ]
+    },
+    {
+      "id": "SP13",
+      "category": "account_termination",
+      "severity": "medium",
+      "note_tr": "Ücretli abonelik 14 gün önceden bildirimle her an sonlandırılabilir.",
+      "evidence": [
+        "we reserve the right to terminate a Paid Subscription at any time, on no less than 14 days' notice to you"
+      ]
+    },
+    {
+      "id": "SP14",
+      "category": "content_license",
+      "severity": "high",
+      "note_tr": "Paylaşılan içeriğe dünya çapında, geri alınamaz, alt lisanslanabilir lisans; manevi haklardan feragat.",
+      "evidence": [
+        "you hereby grant to Spotify a non-exclusive, transferable, sublicensable, royalty-free, fully paid, irrevocable, worldwide license"
+      ]
+    },
+    {
+      "id": "SP15",
+      "category": "content_license",
+      "severity": "low",
+      "optional": true,
+      "note_tr": "Geri bildirimler ücretsiz ve sınırsız kullanılabilir.",
+      "evidence": [
+        "such Feedback is not confidential and may be used by Spotify without restriction and without payment to you"
+      ]
+    },
+    {
+      "id": "SP16",
+      "category": "tracking_profiling",
+      "severity": "low",
+      "note_tr": "Cihaz kaynakları kullanılır, reklam gösterilir ve iş ortaklarına da izin verilir.",
+      "also": [
+        "data_sharing"
+      ],
+      "evidence": [
+        "You also grant to us the right (1) to allow the Spotify Service to use the processor, bandwidth, and storage hardware on your Device"
+      ]
+    },
+    {
+      "id": "SP17",
+      "category": "indemnification",
+      "severity": "medium",
+      "note_tr": "Kullanıcı Spotify'ın zararlarını ve avukatlık masraflarını karşılar.",
+      "evidence": [
+        "You agree to indemnify and hold Spotify harmless"
+      ]
+    },
+    {
+      "id": "SP18",
+      "category": "governing_law",
+      "severity": "low",
+      "note_tr": "New York hukuku ve mahkemeleri.",
+      "evidence": [
+        "are governed by and shall be construed in accordance with the laws of the state of New York"
+      ]
+    },
+    {
+      "id": "SP19",
+      "category": "unilateral_change",
+      "severity": "medium",
+      "note_tr": "Koşullar değiştirilebilir; kullanmaya devam etmek kabul sayılır.",
+      "evidence": [
+        "Your use of the Spotify Service following any changes to these Terms will constitute your acceptance of such changes."
+      ]
+    },
+    {
+      "id": "SP20",
+      "category": "account_termination",
+      "severity": "low",
+      "optional": true,
+      "note_tr": "Kullanıcı içeriği herhangi bir sebeple veya sebepsiz kaldırılabilir; kullanıcı adı geri alınabilir.",
+      "also": [
+        "unilateral_change"
+      ],
+      "evidence": [
+        "Spotify reserves the right to remove or disable access to any User Content for any or no reason.",
+        "Spotify may reclaim, or require you to change, your username for any reason."
+      ]
+    },
+    {
+      "id": "SP21",
+      "category": "tracking_profiling",
+      "severity": "low",
+      "optional": true,
+      "note_tr": "İçerik seçimi ticari anlaşmalardan etkilenebilir.",
+      "evidence": [
+        "may be influenced by commercial considerations"
+      ]
+    }
+  ]
+}

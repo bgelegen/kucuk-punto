@@ -1,0 +1,31 @@
+{
+  "name": "kucuk-punto",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Kullanım koşulları, gizlilik politikası ve abonelik şartları için kanıta dayalı risk raporu çıkaran Chrome eklentisi",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "node tests/e2e-extension.mjs",
+    "eval": "node eval/run.js",
+    "eval:injection": "node eval/injection.js",
+    "eval:check-gold": "node eval/check-gold.js",
+    "capture": "node scripts/capture-fixtures.mjs",
+    "serve": "node scripts/serve.js",
+    "serve:mock": "KP_MOCK=1 node scripts/serve.js",
+    "cy:open": "cypress open --e2e --browser electron",
+    "cy:run": "cypress run --e2e --browser electron",
+    "demo": "node scripts/demo.js",
+    "eval:gemini": "node eval/run.js --provider gemini && node eval/injection.js --provider gemini"
+  },
+  "devDependencies": {
+    "@page-agent/page-controller": "^1.12.4",
+    "cypress": "^15.21.1",
+    "esbuild": "^0.28.2"
+  }
+}

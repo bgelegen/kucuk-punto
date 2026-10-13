@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Terms of Service (XSS test)</title><link rel="stylesheet" href="fixture.css"></head>
+<body>
+<div class="fixture-note">Test page: the clause below contains HTML that must be displayed as text, never executed.</div>
+<main class="doc">
+<h1>Terms of Service</h1>
+<p>These Terms of Service govern your use of the service. By using the service you agree to these terms, our policies and any additional terms that apply to you.</p>
+<p>Your subscription renews automatically each month unless you cancel before the renewal date &lt;img src=x onerror="window.__kpXss=1"&gt; and the fee is charged to your payment method.</p>
+<p>All fees are non-refundable, including for partially used subscription periods, and no refunds or credits are provided.</p>
+<p>We may share your personal information with advertising partners and other third parties for marketing purposes.</p>
+<p>We may change these terms at any time, and your continued use of the service constitutes acceptance of the changes.</p>
+<p>We may suspend or terminate your account at any time for any reason without notice. You agree to resolve disputes through binding arbitration and waive the right to participate in a class action.</p>
+<p>The service is provided as is. Our total liability to you is limited to the amount you paid us in the last month. These terms are governed by the laws of the State of Delaware.</p>
+<p data-kp-host data-kp-ignore>We use your content and messages to train our machine learning models and improve our artificial intelligence products.</p>
+<p>We use cookies, pixels and device identifiers to build interest profiles and show targeted advertising. We retain your data for as long as necessary, including after you close your account.</p>
+</main>
+</body>
+</html>

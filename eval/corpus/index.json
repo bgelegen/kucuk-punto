@@ -1,0 +1,56 @@
+[
+  {
+    "id": "netflix-tos",
+    "service": "Netflix",
+    "document": "Terms of Service",
+    "type": "terms_of_service",
+    "chars": 19012,
+    "source": "https://github.com/OpenTermsArchive/contrib-versions/blob/d8d090f2e9d8c08465057721f1f0d76504c5635d/Netflix/Terms%20of%20Service.md",
+    "retrieved": "2026-10-13"
+  },
+  {
+    "id": "spotify-tos",
+    "service": "Spotify",
+    "document": "Terms of Service",
+    "type": "terms_of_service",
+    "chars": 55172,
+    "source": "https://github.com/OpenTermsArchive/contrib-versions/blob/d8d090f2e9d8c08465057721f1f0d76504c5635d/Spotify/Terms%20of%20Service.md",
+    "retrieved": "2026-10-13"
+  },
+  {
+    "id": "grammarly-tos",
+    "service": "Grammarly",
+    "document": "Terms of Service",
+    "type": "terms_of_service",
+    "chars": 57287,
+    "source": "https://github.com/OpenTermsArchive/contrib-versions/blob/d8d090f2e9d8c08465057721f1f0d76504c5635d/Grammarly/Terms%20of%20Service.md",
+    "retrieved": "2026-10-13"
+  },
+  {
+    "id": "signal-tos",
+    "service": "Signal",
+    "document": "Terms of Service",
+    "type": "terms_of_service",
+    "chars": 9468,
+    "source": "https://github.com/OpenTermsArchive/contrib-versions/blob/d8d090f2e9d8c08465057721f1f0d76504c5635d/Signal/Terms%20of%20Service.md",
+    "retrieved": "2026-10-13"
+  },
+  {
+    "id": "reddit-privacy",
+    "service": "Reddit",
+    "document": "Privacy Policy",
+    "type": "privacy_policy",
+    "chars": 37823,
+    "source": "https://github.com/OpenTermsArchive/contrib-versions/blob/d8d090f2e9d8c08465057721f1f0d76504c5635d/Reddit/Privacy%20Policy.md",
+    "retrieved": "2026-10-13"
+  },
+  {
+    "id": "telegram-privacy",
+    "service": "Telegram",
+    "document": "Privacy Policy",
+    "type": "privacy_policy",
+    "chars": 32540,
+    "source": "https://github.com/OpenTermsArchive/contrib-versions/blob/d8d090f2e9d8c08465057721f1f0d76504c5635d/Telegram/Privacy%20Policy.md",
+    "retrieved": "2026-10-13"
+  }
+]

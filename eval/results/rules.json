@@ -1,0 +1,1440 @@
+{
+  "tag": "rules",
+  "engine": {
+    "mode": "rules"
+  },
+  "date": "2026-10-13T15:38:10.573Z",
+  "totals": {
+    "findings": 257,
+    "required": 62,
+    "caught": 39,
+    "missed": 23,
+    "false_alarms": 65,
+    "duplicates": 144,
+    "optional_caught": 9,
+    "severity_agree": 28,
+    "matched": 48
+  },
+  "precision": 0.7470817120622568,
+  "recall": 0.6290322580645161,
+  "f1": 0.6829935695717609,
+  "docs": [
+    {
+      "doc": "netflix-tos",
+      "service": "Netflix",
+      "document": "Terms of Service",
+      "chars": 19012,
+      "engine_mode": "rules",
+      "model": null,
+      "error": null,
+      "score": 80,
+      "band": "high",
+      "ms": 37,
+      "attempts": 0,
+      "repaired": false,
+      "schema_errors": 0,
+      "rejected": 0,
+      "rejected_reasons": {},
+      "rejected_examples": [],
+      "low_confidence": 0,
+      "uncertain_kinds": {
+        "external_reference": 1,
+        "rules_only": 1
+      },
+      "usage": null,
+      "counts": {
+        "findings": 10,
+        "required": 5,
+        "caught": 3,
+        "missed": 2,
+        "false_alarms": 4,
+        "duplicates": 2,
+        "optional_caught": 1,
+        "severity_agree": 4,
+        "matched": 4
+      },
+      "precision": 0.6,
+      "recall": 0.6,
+      "f1": 0.6,
+      "caught": [
+        "N2",
+        "N3",
+        "N5"
+      ],
+      "missed": [
+        {
+          "id": "N1",
+          "category": "auto_renewal",
+          "severity": "medium",
+          "note_tr": "İptal edilmezse abonelik her dönem yeniden ücretlendirilir."
+        },
+        {
+          "id": "N4",
+          "category": "unilateral_change",
+          "severity": "low",
+          "note_tr": "Koşullar Netflix tarafından değiştirilebilir."
+        }
+      ],
+      "false_alarms": [
+        {
+          "category": "ai_training",
+          "severity": "medium",
+          "quote": "(ix) engage in any of the foregoing in connection with the use, creation, development, modification, prompting, fine-tuning, training, testing, benchmarking or ",
+          "para": 20
+        },
+        {
+          "category": "auto_renewal",
+          "severity": "medium",
+          "quote": "with a third party as a Payment Method and wish to cancel your Netflix subscription, you may need to do so through such third party, for example by visiting you",
+          "para": 31
+        },
+        {
+          "category": "account_termination",
+          "severity": "medium",
+          "quote": "An Extra Member may cancel their account at any time; cancellation by the Extra Member will result in the Extra Member’s immediate loss of access to the Netflix",
+          "para": 35
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "You may also be able to use the Netflix service as a profile user under an Account Owner’s subscription, provided you are part of the same household, or, in cou",
+          "para": 4
+        }
+      ],
+      "duplicates": [
+        {
+          "category": "price_change",
+          "point": "N3"
+        },
+        {
+          "category": "price_change",
+          "point": "N3"
+        }
+      ]
+    },
+    {
+      "doc": "spotify-tos",
+      "service": "Spotify",
+      "document": "Terms of Service",
+      "chars": 55172,
+      "engine_mode": "rules",
+      "model": null,
+      "error": null,
+      "score": 96,
+      "band": "high",
+      "ms": 48,
+      "attempts": 0,
+      "repaired": false,
+      "schema_errors": 0,
+      "rejected": 0,
+      "rejected_reasons": {},
+      "rejected_examples": [],
+      "low_confidence": 0,
+      "uncertain_kinds": {
+        "external_reference": 6,
+        "rules_only": 1
+      },
+      "usage": null,
+      "counts": {
+        "findings": 109,
+        "required": 17,
+        "caught": 13,
+        "missed": 4,
+        "false_alarms": 10,
+        "duplicates": 85,
+        "optional_caught": 1,
+        "severity_agree": 8,
+        "matched": 14
+      },
+      "precision": 0.908256880733945,
+      "recall": 0.7647058823529411,
+      "f1": 0.8303225806451612,
+      "caught": [
+        "SP1",
+        "SP2",
+        "SP5",
+        "SP6",
+        "SP7",
+        "SP8",
+        "SP9",
+        "SP10",
+        "SP11",
+        "SP14",
+        "SP16",
+        "SP17",
+        "SP18"
+      ],
+      "missed": [
+        {
+          "id": "SP4",
+          "category": "unilateral_change",
+          "severity": "medium",
+          "note_tr": "Hizmet ve içerik bildirimsiz değiştirilebilir veya kaldırılabilir."
+        },
+        {
+          "id": "SP12",
+          "category": "account_termination",
+          "severity": "medium",
+          "note_tr": "Spotify sözleşmeyi feshedebilir veya erişimi askıya alabilir."
+        },
+        {
+          "id": "SP13",
+          "category": "account_termination",
+          "severity": "medium",
+          "note_tr": "Ücretli abonelik 14 gün önceden bildirimle her an sonlandırılabilir."
+        },
+        {
+          "id": "SP19",
+          "category": "unilateral_change",
+          "severity": "medium",
+          "note_tr": "Koşullar değiştirilebilir; kullanmaya devam etmek kabul sayılır."
+        }
+      ],
+      "false_alarms": [
+        {
+          "category": "dispute_waiver",
+          "severity": "high",
+          "quote": "Governing law, jurisdiction, class action waiver, and jury trial waiver",
+          "para": 84
+        },
+        {
+          "category": "dispute_waiver",
+          "severity": "high",
+          "quote": "courts located in New York, New York, to resolve any Dispute that is not subject to mandatory arbitration under the Arbitration Agreement below (including, but ",
+          "para": 85
+        },
+        {
+          "category": "data_sharing",
+          "severity": "high",
+          "quote": "You may not assign these Terms, in whole or in part, nor transfer or sublicense your rights under these Terms to any third party.",
+          "para": 121
+        },
+        {
+          "category": "unilateral_change",
+          "severity": "medium",
+          "quote": "Please refer to Section 7 below for information about those additional terms and how we may change these Terms or the additional terms incorporated by reference",
+          "para": 5
+        },
+        {
+          "category": "data_retention",
+          "severity": "medium",
+          "quote": "The Spotify software applications and the Content are licensed, not sold or transferred to you, and Spotify and its licensors retain ownership of all copies of ",
+          "para": 23
+        },
+        {
+          "category": "liability_limit",
+          "severity": "low",
+          "quote": "We are not responsible for the products and services provided by such third parties.",
+          "para": 11
+        },
+        {
+          "category": "liability_limit",
+          "severity": "low",
+          "quote": "Spotify is not responsible for what you or others post or share on the Spotify Service.",
+          "para": 53
+        },
+        {
+          "category": "liability_limit",
+          "severity": "low",
+          "quote": "These Terms are between you and Spotify only, not with Apple, and Apple is not responsible for the Spotify Service and the content thereof.",
+          "para": 83
+        },
+        {
+          "category": "liability_limit",
+          "severity": "low",
+          "quote": "Apple is not responsible for addressing any claims by you or any third party relating to the Spotify Service or your possession or use of the Spotify Service, i",
+          "para": 83
+        },
+        {
+          "category": "liability_limit",
+          "severity": "low",
+          "quote": "Apple is not responsible for the investigation, defense, settlement, and discharge of any third-party claim that the Spotify Service or your possession and use ",
+          "para": 83
+        }
+      ],
+      "duplicates": [
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP2"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP2"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP2"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "SP1"
+        },
+        {
+          "category": "price_change",
+          "point": "SP8"
+        },
+        {
+          "category": "price_change",
+          "point": "SP8"
+        },
+        {
+          "category": "liability_limit",
+          "point": "SP5"
+        },
+        {
+          "category": "liability_limit",
+          "point": "SP5"
+        },
+        {
+          "category": "governing_law",
+          "point": "SP18"
+        }
+      ]
+    },
+    {
+      "doc": "grammarly-tos",
+      "service": "Grammarly",
+      "document": "Terms of Service",
+      "chars": 57287,
+      "engine_mode": "rules",
+      "model": null,
+      "error": null,
+      "score": 94,
+      "band": "high",
+      "ms": 48,
+      "attempts": 0,
+      "repaired": false,
+      "schema_errors": 0,
+      "rejected": 0,
+      "rejected_reasons": {},
+      "rejected_examples": [],
+      "low_confidence": 0,
+      "uncertain_kinds": {
+        "external_reference": 1,
+        "rules_only": 1
+      },
+      "usage": null,
+      "counts": {
+        "findings": 74,
+        "required": 14,
+        "caught": 8,
+        "missed": 6,
+        "false_alarms": 17,
+        "duplicates": 46,
+        "optional_caught": 3,
+        "severity_agree": 7,
+        "matched": 11
+      },
+      "precision": 0.7702702702702703,
+      "recall": 0.5714285714285714,
+      "f1": 0.656115107913669,
+      "caught": [
+        "G1",
+        "G2",
+        "G4",
+        "G9",
+        "G11",
+        "G12",
+        "G15",
+        "G16"
+      ],
+      "missed": [
+        {
+          "id": "G5",
+          "category": "unilateral_change",
+          "severity": "medium",
+          "note_tr": "Koşullar takdire bağlı değiştirilir; kullanmaya devam etmek kabul sayılır."
+        },
+        {
+          "id": "G8",
+          "category": "cancellation_refund",
+          "severity": "medium",
+          "note_tr": "Ek yapay zekâ kapasitesi iade edilmez."
+        },
+        {
+          "id": "G10",
+          "category": "ai_training",
+          "severity": "medium",
+          "note_tr": "İçerik ve etkileşimler öneri motorunu eğitmek ve yeni ürün geliştirmek için kullanılabilir."
+        },
+        {
+          "id": "G13",
+          "category": "account_termination",
+          "severity": "medium",
+          "note_tr": "Hesap askıya alınabilir veya kapatılabilir; şirket sözleşmeyi her an sorumsuzca feshedebilir."
+        },
+        {
+          "id": "G14",
+          "category": "account_termination",
+          "severity": "medium",
+          "note_tr": "Fesihte içerik silinebilir; şirket sorumlu değildir."
+        },
+        {
+          "id": "G18",
+          "category": "governing_law",
+          "severity": "low",
+          "note_tr": "Kaliforniya hukuku ve San Francisco mahkemeleri."
+        }
+      ],
+      "false_alarms": [
+        {
+          "category": "dispute_waiver",
+          "severity": "high",
+          "quote": "If you are a user in the European Economic Area (“EEA“), or any other country that does not allow such an arbitration agreement, Sections 12.1-12.8 do not apply",
+          "para": 7
+        },
+        {
+          "category": "dispute_waiver",
+          "severity": "high",
+          "quote": "expect to survive will survive, including, but not limited to, “Warranty Disclaimers,” “Limitation of Liability,” “Arbitration and Dispute Resolution Agreement,",
+          "para": 55
+        },
+        {
+          "category": "dispute_waiver",
+          "severity": "high",
+          "quote": "Arbitration and Dispute Resolution Agreement",
+          "para": 64
+        },
+        {
+          "category": "dispute_waiver",
+          "severity": "high",
+          "quote": "is based in California, so if there are claims between you and Superhuman that aren’t subject to arbitration, you and Superhuman each agree to litigate those cl",
+          "para": 74
+        },
+        {
+          "category": "dispute_waiver",
+          "severity": "high",
+          "quote": "Except as prohibited by law, these Terms will be governed exclusively by California law, without regard to conflict-of-law rules, and U.S. federal law (includin",
+          "para": 74
+        },
+        {
+          "category": "dispute_waiver",
+          "severity": "high",
+          "quote": "For clarity, this Section 12.9 will continue to apply even if you validly opt out of arbitration under Section 12.8.",
+          "para": 74
+        },
+        {
+          "category": "dispute_waiver",
+          "severity": "high",
+          "quote": "If you are a resident in a member state of the EEA or a country in which the Arbitration Agreement in Section 12 is prohibited by local law, you may be entitled",
+          "para": 74
+        },
+        {
+          "category": "ai_training",
+          "severity": "medium",
+          "quote": "You also must not use our generative AI features i) in a way that infringes, violates, or misappropriates any of our rights or the rights of any third party, or",
+          "para": 26
+        },
+        {
+          "category": "account_termination",
+          "severity": "medium",
+          "quote": "We may, in our sole discretion, change the functionality of the Beta Services and/or discontinue, suspend, or remove your access to such Beta Services (includin",
+          "para": 33
+        },
+        {
+          "category": "auto_renewal",
+          "severity": "medium",
+          "quote": "Authorization for Recurring Payments.",
+          "para": 42
+        },
+        {
+          "category": "account_termination",
+          "severity": "medium",
+          "quote": "We may also at our sole discretion limit access to the Services and/or terminate any subscriptions of any user of the Services who infringes any intellectual pr",
+          "para": 86
+        },
+        {
+          "category": "content_license",
+          "severity": "medium",
+          "quote": "We hereby grant you a non-exclusive, non-transferable, revocable license to use a compiled code copy of the Mobile Applications for one Account on mobile device",
+          "para": 88
+        },
+        {
+          "category": "liability_limit",
+          "severity": "low",
+          "quote": "We are not responsible for this.",
+          "para": 43
+        },
+        {
+          "category": "liability_limit",
+          "severity": "low",
+          "quote": "reasonably expect to survive will survive, including, but not limited to, “Warranty Disclaimers,” “Limitation of Liability,” “Arbitration and Dispute Resolution",
+          "para": 55
+        },
+        {
+          "category": "liability_limit",
+          "severity": "low",
+          "quote": "Limitation of Liability",
+          "para": 60
+        },
+        {
+          "category": "liability_limit",
+          "severity": "low",
+          "quote": "You acknowledge that Apple is not responsible for addressing any claims by you or any third party relating to the Apple-Sourced Software or your possession and/",
+          "para": 89
+        },
+        {
+          "category": "liability_limit",
+          "severity": "low",
+          "quote": "claim that the Apple-Sourced Software or your possession and use of that Apple-Sourced Software infringes that third party’s intellectual property rights, Apple",
+          "para": 89
+        }
+      ],
+      "duplicates": [
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "dispute_waiver",
+          "point": "G1"
+        },
+        {
+          "category": "liability_limit",
+          "point": "G15"
+        },
+        {
+          "category": "liability_limit",
+          "point": "G17"
+        },
+        {
+          "category": "liability_limit",
+          "point": "G16"
+        },
+        {
+          "category": "liability_limit",
+          "point": "G16"
+        }
+      ]
+    },
+    {
+      "doc": "signal-tos",
+      "service": "Signal",
+      "document": "Terms of Service",
+      "chars": 9468,
+      "engine_mode": "rules",
+      "model": null,
+      "error": null,
+      "score": 81,
+      "band": "high",
+      "ms": 8,
+      "attempts": 0,
+      "repaired": false,
+      "schema_errors": 0,
+      "rejected": 0,
+      "rejected_reasons": {},
+      "rejected_examples": [],
+      "low_confidence": 0,
+      "uncertain_kinds": {
+        "external_reference": 1,
+        "rules_only": 1
+      },
+      "usage": null,
+      "counts": {
+        "findings": 12,
+        "required": 7,
+        "caught": 5,
+        "missed": 2,
+        "false_alarms": 3,
+        "duplicates": 4,
+        "optional_caught": 0,
+        "severity_agree": 3,
+        "matched": 5
+      },
+      "precision": 0.75,
+      "recall": 0.7142857142857143,
+      "f1": 0.7317073170731706,
+      "caught": [
+        "SG2",
+        "SG3",
+        "SG4",
+        "SG5",
+        "SG6"
+      ],
+      "missed": [
+        {
+          "id": "SG1",
+          "category": "data_sharing",
+          "severity": "low",
+          "note_tr": "Şifreli bilgi ve üstveri ABD'ye ve diğer ülkelere aktarılır."
+        },
+        {
+          "id": "SG7",
+          "category": "unilateral_change",
+          "severity": "low",
+          "note_tr": "Hizmetin bir kısmı veya tamamı her an sonlandırılabilir."
+        }
+      ],
+      "false_alarms": [
+        {
+          "category": "data_sharing",
+          "severity": "high",
+          "quote": "Our Services do not provide access to emergency service providers like the police, fire department, hospitals, or other public safety organizations.",
+          "para": 12
+        },
+        {
+          "category": "content_license",
+          "severity": "medium",
+          "quote": "Signal grants you a limited, revocable, non-exclusive, and non-transferable license to use our Services in accordance with these Terms.",
+          "para": 16
+        },
+        {
+          "category": "liability_limit",
+          "severity": "low",
+          "quote": "“Licenses,” “Disclaimers,” “Limitation of Liability,” “Resolving dispute,” “Availability” and “Ending these Terms,” and “General”.",
+          "para": 21
+        }
+      ],
+      "duplicates": [
+        {
+          "category": "unilateral_change",
+          "point": "SG5"
+        },
+        {
+          "category": "liability_limit",
+          "point": "SG2"
+        },
+        {
+          "category": "liability_limit",
+          "point": "SG3"
+        },
+        {
+          "category": "liability_limit",
+          "point": "SG3"
+        }
+      ]
+    },
+    {
+      "doc": "reddit-privacy",
+      "service": "Reddit",
+      "document": "Privacy Policy",
+      "chars": 37823,
+      "engine_mode": "rules",
+      "model": null,
+      "error": null,
+      "score": 81,
+      "band": "high",
+      "ms": 23,
+      "attempts": 0,
+      "repaired": false,
+      "schema_errors": 0,
+      "rejected": 0,
+      "rejected_reasons": {},
+      "rejected_examples": [],
+      "low_confidence": 0,
+      "uncertain_kinds": {
+        "external_reference": 2,
+        "rules_only": 1
+      },
+      "usage": null,
+      "counts": {
+        "findings": 36,
+        "required": 12,
+        "caught": 9,
+        "missed": 3,
+        "false_alarms": 17,
+        "duplicates": 7,
+        "optional_caught": 3,
+        "severity_agree": 5,
+        "matched": 12
+      },
+      "precision": 0.5277777777777778,
+      "recall": 0.75,
+      "f1": 0.6195652173913044,
+      "caught": [
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "R5",
+        "R6",
+        "R7",
+        "R9",
+        "R13"
+      ],
+      "missed": [
+        {
+          "id": "R10",
+          "category": "data_retention",
+          "severity": "medium",
+          "note_tr": "Hesap silinse de gönderiler görünür kalır; bazı bilgiler saklanabilir."
+        },
+        {
+          "id": "R11",
+          "category": "data_sharing",
+          "severity": "medium",
+          "note_tr": "Veriler ABD'ye ve diğer ülkelere aktarılır; aynı haklara sahip olmayabilirsiniz."
+        },
+        {
+          "id": "R12",
+          "category": "tracking_profiling",
+          "severity": "low",
+          "note_tr": "\"Beni izleme\" (Do Not Track) sinyaline uyulmaz."
+        }
+      ],
+      "false_alarms": [
+        {
+          "category": "data_sharing",
+          "severity": "high",
+          "quote": "We don’t sell your personal data to third parties, including data brokers.",
+          "para": 7
+        },
+        {
+          "category": "data_sharing",
+          "severity": "high",
+          "quote": "Provide you with relevant advertising, including personalized advertising on Reddit;",
+          "para": 21
+        },
+        {
+          "category": "data_sharing",
+          "severity": "high",
+          "quote": "— — Controlling Advertising and Analytics — — Some analytics providers we partner with may provide specific opt-out mechanisms and we may provide, as needed and",
+          "para": 29
+        },
+        {
+          "category": "dispute_waiver",
+          "severity": "high",
+          "quote": "In some situations, the DPF Framework gives you the right to invoke binding arbitration.",
+          "para": 38
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "Our communities are largely public and anyone can see your profile, posts, and comments.",
+          "para": 5
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "Your Reddit account has a profile page that is public.",
+          "para": 13
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "Your profile contains information about your activities on the Services, such as your username, prior posts and comments, karma, trophies and achievement badges",
+          "para": 13
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "When you use Reddit, you may also provide other information, such as a bio, gender, birthday, location, language, profile picture, or social link.",
+          "para": 17
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "prior to you creating a username or account to help improve your experience exploring Reddit. — — — Public Content You Submit — — Public content you submit incl",
+          "para": 18
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "When you delete your account, your profile is no longer visible to other users and disassociated from content you posted under that account.",
+          "para": 29
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "Sign-In, Sign in with Apple, and connected X accounts), and the Social links section of your Profile Settings. — — — Controlling Personalized Advertising — — Yo",
+          "para": 29
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "To do so, visit the Privacy section of the User Settings in your account here, if using desktop, and in your Account Settings if using the Reddit mobile app. — ",
+          "para": 29
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "If you prefer, you can usually choose to set your browser to remove or reject first- and third-party cookies.",
+          "para": 29
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "Please note that if you choose to remove or reject cookies, this could affect the availability and functionality of our Services.",
+          "para": 29
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "For more information on controlling how cookies and similar technologies are used on Reddit, see our Cookie Notice. — — — Controlling Advertising and Analytics ",
+          "para": 29
+        },
+        {
+          "category": "liability_limit",
+          "severity": "low",
+          "quote": "In accordance with the DPF, Reddit, Inc., is also liable for onward transfers to third parties that process personal information in a way that does not follow t",
+          "para": 37
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "We do not engage in profiling of consumers in furtherance of automated decisions that produce legal or similarly significant effects as those terms are defined ",
+          "para": 47
+        }
+      ],
+      "duplicates": [
+        {
+          "category": "data_sharing",
+          "point": "R6"
+        },
+        {
+          "category": "data_sharing",
+          "point": "R6"
+        },
+        {
+          "category": "tracking_profiling",
+          "point": "R1"
+        },
+        {
+          "category": "tracking_profiling",
+          "point": "R1"
+        },
+        {
+          "category": "tracking_profiling",
+          "point": "R1"
+        },
+        {
+          "category": "tracking_profiling",
+          "point": "R15"
+        },
+        {
+          "category": "tracking_profiling",
+          "point": "R2"
+        }
+      ]
+    },
+    {
+      "doc": "telegram-privacy",
+      "service": "Telegram",
+      "document": "Privacy Policy",
+      "chars": 32540,
+      "engine_mode": "rules",
+      "model": null,
+      "error": null,
+      "score": 63,
+      "band": "high",
+      "ms": 16,
+      "attempts": 0,
+      "repaired": false,
+      "schema_errors": 0,
+      "rejected": 0,
+      "rejected_reasons": {},
+      "rejected_examples": [],
+      "low_confidence": 0,
+      "uncertain_kinds": {
+        "rules_only": 1
+      },
+      "usage": null,
+      "counts": {
+        "findings": 16,
+        "required": 7,
+        "caught": 1,
+        "missed": 6,
+        "false_alarms": 14,
+        "duplicates": 0,
+        "optional_caught": 1,
+        "severity_agree": 1,
+        "matched": 2
+      },
+      "precision": 0.125,
+      "recall": 0.14285714285714285,
+      "f1": 0.13333333333333333,
+      "caught": [
+        "T9"
+      ],
+      "missed": [
+        {
+          "id": "T2",
+          "category": "data_retention",
+          "severity": "low",
+          "note_tr": "Ücretli gönderinin kalıcı kopyası, gönderi silinse de kalır."
+        },
+        {
+          "id": "T4",
+          "category": "tracking_profiling",
+          "severity": "medium",
+          "note_tr": "Reklamlar telefon kodu/IP'den tahmin edilen konuma ve takip edilen kanallara göre seçilir."
+        },
+        {
+          "id": "T5",
+          "category": "data_sharing",
+          "severity": "medium",
+          "note_tr": "Kişisel veriler Britanya Virjin Adaları ve Dubai'deki grup şirketleriyle paylaşılır."
+        },
+        {
+          "id": "T8",
+          "category": "data_retention",
+          "severity": "low",
+          "note_tr": "Bulut sohbetinde silinen mesajın kopyası karşı tarafta kalır; grup mesajları 48 saat saklanır."
+        },
+        {
+          "id": "T10",
+          "category": "account_termination",
+          "severity": "low",
+          "note_tr": "18 ay giriş yapılmazsa hesap ve tüm veriler silinir."
+        },
+        {
+          "id": "T13",
+          "category": "cancellation_refund",
+          "severity": "low",
+          "note_tr": "Ödeme anlaşmazlıklarında Telegram şikâyet veya iade işlemez."
+        }
+      ],
+      "false_alarms": [
+        {
+          "category": "data_sharing",
+          "severity": "high",
+          "quote": "This data cannot be disclosed to any third parties – advertisers included.",
+          "para": 35
+        },
+        {
+          "category": "data_sharing",
+          "severity": "high",
+          "quote": "However, note that if you chat with others and share data with them, they become capable of sharing such data further with third parties without your knowledge ",
+          "para": 55
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "You provide your mobile number and basic account data (which may include profile name, profile picture and about information) to create a Telegram account.",
+          "para": 7
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "To make it easier for your contacts and other people to reach you and recognize who you are, the screen name you choose, your profile pictures, and your usernam",
+          "para": 8
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "You can add your birthday (with or without the year) to your Telegram profile if you wish to do so.",
+          "para": 10
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "You can granularly choose which users are able to see it on your profile (by default, your Contacts), and they will be shown a reminder on the day.",
+          "para": 10
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "Telegram Business subscribers can add a fixed location and a list of opening hours to their profile, to help clients identify and engage with their business mor",
+          "para": 11
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "If you choose to add it to your profile, this information is always public.",
+          "para": 11
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "The only cookies we use are those to operate and provide our Services on the web.",
+          "para": 25
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "We do not use cookies for profiling or advertising.",
+          "para": 25
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "The cookies we use are small text files that allow us to provide and customize our Services, and in doing so provide you with an enhanced user experience.",
+          "para": 25
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "Your browser should allow you to control these cookies, including whether or not to accept them and how to remove them.",
+          "para": 25
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "You may choose to block cookies with your web browser, however, if you do disable these cookies you will not be able to log in to Telegram Web.",
+          "para": 25
+        },
+        {
+          "category": "tracking_profiling",
+          "severity": "low",
+          "quote": "In any of the above cases, the developers of an automated user (bot) can get your public account data (see section 3.1 above): your screen name, username and pr",
+          "para": 41
+        }
+      ],
+      "duplicates": []
+    }
+  ]
+}

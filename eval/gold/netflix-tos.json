@@ -1,0 +1,26 @@
+{
+  "doc": "netflix-tos",
+  "points": [
+    { "id": "N1", "category": "auto_renewal", "severity": "medium", "note_tr": "İptal edilmezse abonelik her dönem yeniden ücretlendirilir.",
+      "evidence": ["Unless you cancel your subscription before your billing date, you authorize us to charge the subscription fee for the next billing cycle", "Your Netflix subscription will continue until terminated."] },
+    { "id": "N2", "category": "cancellation_refund", "severity": "high", "note_tr": "Ödemeler iade edilmez, kısmi dönem iadesi yok.",
+      "evidence": ["payments are non-refundable and we do not provide refunds or credits for any partial subscription periods or unused Netflix content"] },
+    { "id": "N3", "category": "price_change", "severity": "medium", "note_tr": "Fiyat ve planlar değiştirilebilir (1 ay önceden bildirimle).",
+      "evidence": ["We may change our subscription plans and the price of our service from time to time"] },
+    { "id": "N4", "category": "unilateral_change", "severity": "low", "note_tr": "Koşullar Netflix tarafından değiştirilebilir.",
+      "evidence": ["We may, from time to time, change these Terms of Use"] },
+    { "id": "N5", "category": "governing_law", "severity": "low", "note_tr": "Hollanda hukuku uygulanır.",
+      "evidence": ["These Terms of Use shall be governed by and construed in accordance with the laws of the Netherlands."] },
+    { "id": "N6", "category": "auto_renewal", "severity": "low", "optional": true, "note_tr": "Birincil kart reddedilirse hesaptaki diğer ödeme yöntemlerinden tahsilat.",
+      "also": ["cancellation_refund"],
+      "evidence": ["You authorize us to charge any Payment Method associated with your account in case your primary Payment Method is declined"] },
+    { "id": "N7", "category": "account_termination", "severity": "low", "optional": true, "note_tr": "Ödeme alınamazsa veya dolandırıcılık şüphesinde erişim askıya alınabilir.",
+      "evidence": ["we may suspend your access to the service until we have successfully charged a valid Payment Method", "We can terminate your account or place your account on hold", "We may terminate or restrict your use of our service if you violate these Terms of Use"] },
+    { "id": "N8", "category": "tracking_profiling", "severity": "low", "optional": true, "note_tr": "Cihaz kimliği gibi bilgiler kampanya uygunluğu için kullanılır; hizmet sürekli test edilir.",
+      "evidence": ["We may use information such as device ID, method of payment or your contact information to determine Offer eligibility.", "we continually test various aspects of our service"] },
+    { "id": "N9", "category": "liability_limit", "severity": "low", "optional": true, "note_tr": "İçeriğin erişilebilir olacağı garanti edilmez.",
+      "evidence": ["we do not guarantee that particular content will be available on the Netflix service at any given time", "is not responsible for the similarity of any of its content"] },
+    { "id": "N10", "category": "unilateral_change", "severity": "low", "optional": true, "note_tr": "Reklamsız planlarda da reklam gösterilebilir.",
+      "evidence": ["there may be some occasions when you may see advertisements"] }
+  ]
+}

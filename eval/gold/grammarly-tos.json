@@ -1,0 +1,228 @@
+{
+  "doc": "grammarly-tos",
+  "points": [
+    {
+      "id": "G1",
+      "category": "dispute_waiver",
+      "severity": "high",
+      "note_tr": "Zorunlu bağlayıcı tahkim (30 gün içinde çıkılmazsa).",
+      "evidence": [
+        "SECTION 12 INCLUDES AN AGREEMENT TO ARBITRATE",
+        "UNLESS YOU OPT OUT OF THE ARBITRATION AGREEMENT WITHIN 30 DAYS",
+        "you and Superhuman agree to submit our disputes exclusively to binding individual arbitration",
+        "You and Superhuman agree to mandatory individual arbitration"
+      ],
+      "scope": [
+        {
+          "from": "If you’re upset with us, let us know",
+          "to": "If you reject a change, you’ll be bound by the most recent version of the Arbitration Agreement"
+        }
+      ]
+    },
+    {
+      "id": "G2",
+      "category": "dispute_waiver",
+      "severity": "high",
+      "note_tr": "Toplu dava ve jüri hakkından feragat.",
+      "evidence": [
+        "YOU WAIVE YOUR RIGHT TO PARTICIPATE IN A CLASS ACTION LAWSUIT",
+        "SECTION 12 ALSO CONTAINS A CLASS ACTION AND JURY TRIAL WAIVER",
+        "each of us may bring claims against the other only on an individual basis"
+      ],
+      "scope": [
+        {
+          "from": "If you’re upset with us, let us know",
+          "to": "If you reject a change, you’ll be bound by the most recent version of the Arbitration Agreement"
+        }
+      ]
+    },
+    {
+      "id": "G3",
+      "category": "dispute_waiver",
+      "severity": "medium",
+      "optional": true,
+      "note_tr": "Toplu başvurular gruplar halinde tahkime gider.",
+      "evidence": [
+        "the disputes must be arbitrated in batches of up to 100 claimants each"
+      ]
+    },
+    {
+      "id": "G4",
+      "category": "auto_renewal",
+      "severity": "high",
+      "note_tr": "Ücretli abonelik o anki ücretten otomatik yenilenir.",
+      "evidence": [
+        "SUCH PAID SUBSCRIPTION WILL BE AUTOMATICALLY RENEWED",
+        "we will bill you in advance on a recurring monthly or annual basis",
+        "we will automatically bill you from the date the subscription tier upgrade takes effect"
+      ]
+    },
+    {
+      "id": "G5",
+      "category": "unilateral_change",
+      "severity": "medium",
+      "note_tr": "Koşullar takdire bağlı değiştirilir; kullanmaya devam etmek kabul sayılır.",
+      "evidence": [
+        "we may make changes to these Terms at our discretion",
+        "Continuing to access or use the Services after this new date means you accept the updated Terms."
+      ]
+    },
+    {
+      "id": "G6",
+      "category": "unilateral_change",
+      "severity": "low",
+      "optional": true,
+      "note_tr": "Özellikler her an değiştirilebilir veya kaldırılabilir.",
+      "evidence": [
+        "We may modify or discontinue any feature, functionality, or component of our Services at any time"
+      ]
+    },
+    {
+      "id": "G7",
+      "category": "tracking_profiling",
+      "severity": "low",
+      "optional": true,
+      "note_tr": "Kullanım verisi (telemetri, üstveri) toplanır ve analiz edilir.",
+      "evidence": [
+        "We may also collect and analyze data relating to your access and use of our Services"
+      ]
+    },
+    {
+      "id": "G8",
+      "category": "cancellation_refund",
+      "severity": "medium",
+      "note_tr": "Ek yapay zekâ kapasitesi iade edilmez.",
+      "evidence": [
+        "will not be refunded to you upon expiry or termination of your Subscription"
+      ]
+    },
+    {
+      "id": "G9",
+      "category": "content_license",
+      "severity": "medium",
+      "note_tr": "İçeriğe dünya çapında, telifsiz lisans; koruma süresi boyunca geçerli.",
+      "evidence": [
+        "You grant us a worldwide, non-exclusive, royalty-free license to your User Content",
+        "The above license lasts as long as intellectual property laws protect your User Content"
+      ]
+    },
+    {
+      "id": "G10",
+      "category": "ai_training",
+      "severity": "medium",
+      "note_tr": "İçerik ve etkileşimler öneri motorunu eğitmek ve yeni ürün geliştirmek için kullanılabilir.",
+      "also": [
+        "content_license"
+      ],
+      "evidence": [
+        "your acceptance or rejection of our grammatical suggestions may help train our suggestion engine",
+        "Developing new products or adding features for our Services"
+      ]
+    },
+    {
+      "id": "G11",
+      "category": "price_change",
+      "severity": "medium",
+      "note_tr": "Ücretler takdire bağlı değiştirilebilir.",
+      "evidence": [
+        "We may change the fees for our Services and associated Subscription Plans at our discretion"
+      ]
+    },
+    {
+      "id": "G12",
+      "category": "cancellation_refund",
+      "severity": "high",
+      "note_tr": "Ödemeler iade edilmez, kısmi dönem iadesi yok.",
+      "evidence": [
+        "all payments made by you under these Terms are non-refundable and payment obligations are non-cancelable"
+      ]
+    },
+    {
+      "id": "G13",
+      "category": "account_termination",
+      "severity": "medium",
+      "note_tr": "Hesap askıya alınabilir veya kapatılabilir; şirket sözleşmeyi her an sorumsuzca feshedebilir.",
+      "evidence": [
+        "We may terminate these Terms at any time without liability to you.",
+        "We reserve the right to suspend or terminate your access to our Services and/or your Account if"
+      ]
+    },
+    {
+      "id": "G14",
+      "category": "account_termination",
+      "severity": "medium",
+      "note_tr": "Fesihte içerik silinebilir; şirket sorumlu değildir.",
+      "also": [
+        "liability_limit"
+      ],
+      "evidence": [
+        "Superhuman will not have any liability whatsoever to you for any suspension or termination, including for deletion of User Content."
+      ]
+    },
+    {
+      "id": "G15",
+      "category": "liability_limit",
+      "severity": "low",
+      "note_tr": "Hizmet \"olduğu gibi\" sunulur.",
+      "evidence": [
+        "THE SERVICES ARE PROVIDED TO YOU ON AN “AS IS,” AND “AS AVAILABLE” BASIS"
+      ]
+    },
+    {
+      "id": "G16",
+      "category": "liability_limit",
+      "severity": "medium",
+      "note_tr": "Sorumluluk 12 aylık ödeme veya 100 dolarla sınırlı; dolaylı zararlar hariç.",
+      "evidence": [
+        "TOTAL AGGREGATE LIABILITY TO YOU UNDER THESE TERMS EXCEED THE AMOUNT THAT YOU HAVE PAID",
+        "IN NO EVENT WILL SUPERHUMAN AND THE SUPERHUMAN ENTITIES’ BE LIABLE TO YOU OR OTHERWISE RESPONSIBLE FOR"
+      ]
+    },
+    {
+      "id": "G17",
+      "category": "liability_limit",
+      "severity": "low",
+      "optional": true,
+      "note_tr": "Yapay zekâ çıktıları için garanti yok, risk kullanıcıda.",
+      "evidence": [
+        "YOU ASSUME ALL RISKS ASSOCIATED WITH YOUR USE OF ANY OUTPUTS",
+        "SUPERHUMAN WILL HAVE NO LIABILITY ARISING OUT OF OR IN CONNECTION WITH BETA SERVICES",
+        "YOU AGREE THAT SUPERHUMAN AND THE SUPERHUMAN ENTITIES WILL HAVE NO LIABILITY, AND HEREBY RELEASE SUPERHUMAN",
+        "Superhuman is not responsible for any harms, damages, loss, lost profits"
+      ]
+    },
+    {
+      "id": "G18",
+      "category": "governing_law",
+      "severity": "low",
+      "note_tr": "Kaliforniya hukuku ve San Francisco mahkemeleri.",
+      "evidence": [
+        "these Terms will be governed exclusively by California law"
+      ]
+    },
+    {
+      "id": "G19",
+      "category": "data_sharing",
+      "severity": "low",
+      "optional": true,
+      "note_tr": "İçerik entegrasyon sağlayıcılarına, ödeme bilgisi Stripe'a iletilir.",
+      "evidence": [
+        "you permit us to transmit your User Content to the provider of the Third-Party Service",
+        "hereby consent and authorize Superhuman and Stripe to share any information and payment instructions"
+      ]
+    },
+    {
+      "id": "G20",
+      "category": "data_sharing",
+      "severity": "low",
+      "optional": true,
+      "note_tr": "Kurum e-postasıyla açılan hesaba kurum erişebilir veya hesabı birleştirebilir.",
+      "also": [
+        "account_termination"
+      ],
+      "evidence": [
+        "the Organization may access, view, restrict, merge, or terminate your Account"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Küçük Punto · Ayarlar</title>
+<link rel="stylesheet" href="options.css">
+</head>
+<body>
+<main>
+  <header>
+    <img src="icons/icon-48.png" alt="" width="40" height="40">
+    <div>
+      <h1>Küçük Punto</h1>
+      <p class="muted">Kullanım koşulları, gizlilik politikası ve abonelik şartları için kanıta dayalı risk raporu</p>
+    </div>
+  </header>
+
+  <div class="disclaimer" role="note"><strong>Hukuki tavsiye değildir.</strong> Küçük Punto otomatik bir okuma yardımıdır; hata yapabilir ve sözleşmenin yerine geçmez.</div>
+
+  <section>
+    <h2>Model sağlayıcısı</h2>
+    <p class="muted">Kendi API anahtarınızı kullanırsınız. Küçük Punto'nun bir sunucusu yoktur; metin doğrudan tarayıcınızdan seçtiğiniz sağlayıcıya gider.</p>
+    <form id="form" autocomplete="off">
+      <label>Sağlayıcı
+        <select id="provider" data-kp="provider"></select>
+      </label>
+      <p id="provider-help" class="help"></p>
+      <label>API anahtarı
+        <span class="inline">
+          <input id="apiKey" data-kp="api-key" type="password" spellcheck="false" placeholder="Anahtarınızı buraya yapıştırın">
+          <button type="button" id="reveal" class="ghost">Göster</button>
+        </span>
+      </label>
+      <details>
+        <summary>Gelişmiş: model adı ve adres</summary>
+        <label>Model <input id="model" data-kp="model" spellcheck="false"></label>
+        <label>Temel adres (base URL) <input id="baseUrl" data-kp="base-url" spellcheck="false"></label>
+        <p class="help">Boş bırakılırsa sağlayıcının varsayılanı kullanılır.</p>
+      </details>
+      <label class="check"><input id="autoAnalyze" type="checkbox"> Koşullar sayfası algılanınca otomatik analiz et
+        <span class="help">Varsayılan kapalı: siz "Analiz et"e basmadan hiçbir metin gönderilmez.</span></label>
+      <div class="buttons">
+        <button type="submit" class="primary" data-kp="save">Kaydet</button>
+        <button type="button" id="test" data-kp="test">Bağlantıyı test et</button>
+        <button type="button" id="clear" class="danger">Anahtarı sil</button>
+      </div>
+      <div id="status" data-kp="status" role="status" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <section>
+    <h2>Neler gönderilir, neler gönderilmez?</h2>
+    <ul>
+      <li>Analize bastığınızda <b>yalnızca ekranda görünen metin</b> sağlayıcıya gönderilir. Gizlenmiş metinler (CSS ile saklanmış, beyaz üstüne beyaz, mikroskobik yazı, ekran dışı) gönderilmez; size ayrıca raporlanır.</li>
+      <li>API anahtarınız bu tarayıcının eklenti deposunda (<code>chrome.storage.local</code>) durur, senkronize edilmez ve yalnızca seçtiğiniz sağlayıcının adresine gider. Sayfaların ona erişimi yoktur.</li>
+      <li>Model sayfada hiçbir şey yapamaz: tıklama, yazma veya kod çalıştırma yetkisi yoktur. Yalnızca JSON döndürür; JSON şemaya ve alıntı doğrulamasına girer.</li>
+      <li>Risk skorunu model değil, eklentinin kendi kodu hesaplar.</li>
+    </ul>
+  </section>
+</main>
+<script src="dist/options.js"></script>
+</body>
+</html>

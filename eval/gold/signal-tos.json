@@ -1,0 +1,21 @@
+{
+  "doc": "signal-tos",
+  "points": [
+    { "id": "SG1", "category": "data_sharing", "severity": "low", "note_tr": "Şifreli bilgi ve üstveri ABD'ye ve diğer ülkelere aktarılır.",
+      "evidence": ["the transfer of your encrypted information and metadata to the United States and other countries"] },
+    { "id": "SG2", "category": "liability_limit", "severity": "low", "note_tr": "Hizmet \"olduğu gibi\" sunulur; kullanıcı üçüncü taraf talepleri için Signal'i ibra eder.",
+      "evidence": ["WE PROVIDE OUR SERVICES ON AN “AS IS” BASIS WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES", "YOU RELEASE US, AFFILIATES, DIRECTORS"] },
+    { "id": "SG3", "category": "liability_limit", "severity": "medium", "note_tr": "Toplam sorumluluk 100 dolarla sınırlı.",
+      "evidence": ["OUR AGGREGATE LIABILITY RELATING TO, ARISING OUT OF, OR IN ANY WAY IN CONNECTION WITH OUR TERMS, US, OR OUR SERVICES WILL NOT EXCEED ONE HUNDRED DOLLARS ($100)."] },
+    { "id": "SG4", "category": "account_termination", "severity": "medium", "note_tr": "Erişim herhangi bir sebeple, her an sonlandırılabilir.",
+      "evidence": ["We may modify, suspend, or terminate your access to or use of our Services anytime for any reason"] },
+    { "id": "SG5", "category": "unilateral_change", "severity": "medium", "note_tr": "Koşullar güncellenir; kullanmaya devam etmek kabul sayılır.",
+      "evidence": ["Your continued use of our Services confirms your acceptance of our updated Terms"] },
+    { "id": "SG6", "category": "governing_law", "severity": "low", "note_tr": "Kaliforniya hukuku ve mahkemeleri.",
+      "also": ["dispute_waiver"],
+      "evidence": ["The laws of the State of California govern our Terms", "exclusively in the United States District Court for the Northern District of California"] },
+    { "id": "SG7", "category": "unilateral_change", "severity": "low", "note_tr": "Hizmetin bir kısmı veya tamamı her an sonlandırılabilir.",
+      "also": ["account_termination"],
+      "evidence": ["We may discontinue some or all of our Services, including certain features and the support for certain devices and platforms, at any time."] }
+  ]
+}
