@@ -9,3 +9,4 @@ cypress/downloads/
 .DS_Store
 site/_kp/
 cypress/.harness-error.json
+son-calisma.log

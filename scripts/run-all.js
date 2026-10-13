@@ -4,10 +4,25 @@
 // Each free Gemini model has its own small daily quota. When a step reports that the current model's
 // quota is used up (exit 6), the step is repeated with the next model; every result names its model.
 // Exit codes: 0 all good · 3 key missing/invalid · 4 no model available now · 5 some step failed
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, loadDotEnv } from './env.js';
 import { pickModel } from './pick-model.js';
+
+// Everything shown in the window is also written to son-calisma.log (no secrets are printed),
+// so the run can be reviewed afterwards without a screenshot.
+const LOG = path.join(ROOT, 'son-calisma.log');
+fs.writeFileSync(LOG, `Küçük Punto · ${new Date().toISOString()}\n`);
+const strip = s => String(s).replace(/\x1b\[[0-9;]*m/g, '');
+const log = (...a) => { const line = a.join(' '); process.stdout.write(line + '\n'); fs.appendFileSync(LOG, strip(line) + '\n'); };
+console.log = log;
+const runStep = (args, env) => new Promise(resolve => {
+  const child = spawn(process.execPath, args, { cwd: ROOT, env, stdio: ['inherit', 'pipe', 'pipe'] });
+  const both = d => { process.stdout.write(d); fs.appendFileSync(LOG, strip(d)); };
+  child.stdout.on('data', both); child.stderr.on('data', both);
+  child.on('close', code => resolve(code));
+});
 
 loadDotEnv();
 const provider = process.env.KP_PROVIDER || 'gemini';
@@ -41,7 +56,8 @@ for (const [name, args] of steps) {
     if (!model) model = await choose();
     if (!model) { status = 'kota'; break; }
     console.log(`\n  ── ${name} (${model}) ──`);
-    const r = spawnSync(process.execPath, [path.join(ROOT, args[0]), ...args.slice(1)], { cwd: ROOT, stdio: 'inherit', env: { ...process.env, KP_PROVIDER: provider, KP_MODEL: model } });
+    const code = await runStep([path.join(ROOT, args[0]), ...args.slice(1)], { ...process.env, KP_PROVIDER: provider, KP_MODEL: model, FORCE_COLOR: '0' });
+    const r = { status: code };
     if (r.status === 6) { console.log(`\n  ${model} modelinin günlük kotası doldu; sonraki model deneniyor.`); exhausted.push(model); model = null; continue; }
     status = r.status === 0 ? 'ok' : 'hata';
     break;
