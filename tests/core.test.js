@@ -92,3 +92,14 @@ test('baseline rules: Turkish and English risky clauses are recognised', () => {
   ]).map(f => f.category);
   for (const c of ['auto_renewal', 'cancellation_refund', 'data_sharing', 'dispute_waiver']) assert.ok(cats.includes(c), c);
 });
+
+test('verify: a verbatim quote that crosses the split between two pieces of one paragraph is accepted', () => {
+  const clauses = [{ id: 'c1', block: 0, text: 'We are not liable for anything. Our aggregate liability is limited to the amounts paid' }, { id: 'c2', block: 0, text: 'by you in the last twelve months. Other text here.' }, { id: 'c3', block: 1, text: 'Unrelated paragraph.' }];
+  const ok = verifyFindings([finding({ category: 'liability_limit', clause_id: 'c1', quote: 'aggregate liability is limited to the amounts paid by you in the last twelve months' })], clauses);
+  assert.equal(ok.accepted.length, 1);
+  assert.equal(ok.accepted[0].evidence.quote, 'aggregate liability is limited to the amounts paid by you in the last twelve months');
+  const spliced = verifyFindings([finding({ quote: 'We are not liable for anything... Other text here.' })], clauses);
+  assert.equal(spliced.accepted.length, 0, 'elided quotes stay rejected');
+  const acrossParagraphs = verifyFindings([finding({ quote: 'Other text here. Unrelated paragraph.' })], clauses);
+  assert.equal(acrossParagraphs.accepted.length, 0, 'never across paragraphs');
+});

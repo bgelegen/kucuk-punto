@@ -1,0 +1,6 @@
+{
+  "mode": "llm",
+  "provider": "gemini",
+  "model": "gemini-flash-lite-latest",
+  "date": "2026-10-14T07:12:48.662Z"
+}

@@ -4,7 +4,7 @@
     "mode": "rules",
     "prompt_version": "2026-10-13.1"
   },
-  "date": "2026-10-13T17:45:12.923Z",
+  "date": "2026-10-14T07:37:42.148Z",
   "docs_ok": 6,
   "docs_failed": 0,
   "totals": {
@@ -34,7 +34,7 @@
       "error": null,
       "score": 80,
       "band": "high",
-      "ms": 37,
+      "ms": 53,
       "attempts": 0,
       "repaired": false,
       "schema_errors": 0,
@@ -47,6 +47,8 @@
         "rules_only": 1
       },
       "usage": null,
+      "warnings": 0,
+      "caught_with_warnings": 3,
       "counts": {
         "findings": 10,
         "required": 5,
@@ -129,7 +131,7 @@
       "error": null,
       "score": 96,
       "band": "high",
-      "ms": 46,
+      "ms": 62,
       "attempts": 0,
       "repaired": false,
       "schema_errors": 0,
@@ -142,6 +144,8 @@
         "rules_only": 1
       },
       "usage": null,
+      "warnings": 0,
+      "caught_with_warnings": 13,
       "counts": {
         "findings": 109,
         "required": 17,
@@ -614,7 +618,7 @@
       "error": null,
       "score": 94,
       "band": "high",
-      "ms": 46,
+      "ms": 47,
       "attempts": 0,
       "repaired": false,
       "schema_errors": 0,
@@ -627,6 +631,8 @@
         "rules_only": 1
       },
       "usage": null,
+      "warnings": 0,
+      "caught_with_warnings": 8,
       "counts": {
         "findings": 74,
         "required": 14,
@@ -992,7 +998,7 @@
       "error": null,
       "score": 81,
       "band": "high",
-      "ms": 6,
+      "ms": 7,
       "attempts": 0,
       "repaired": false,
       "schema_errors": 0,
@@ -1005,6 +1011,8 @@
         "rules_only": 1
       },
       "usage": null,
+      "warnings": 0,
+      "caught_with_warnings": 5,
       "counts": {
         "findings": 12,
         "required": 7,
@@ -1091,7 +1099,7 @@
       "error": null,
       "score": 81,
       "band": "high",
-      "ms": 21,
+      "ms": 26,
       "attempts": 0,
       "repaired": false,
       "schema_errors": 0,
@@ -1104,6 +1112,8 @@
         "rules_only": 1
       },
       "usage": null,
+      "warnings": 0,
+      "caught_with_warnings": 9,
       "counts": {
         "findings": 36,
         "required": 12,
@@ -1296,7 +1306,7 @@
       "error": null,
       "score": 63,
       "band": "high",
-      "ms": 15,
+      "ms": 19,
       "attempts": 0,
       "repaired": false,
       "schema_errors": 0,
@@ -1308,6 +1318,8 @@
         "rules_only": 1
       },
       "usage": null,
+      "warnings": 0,
+      "caught_with_warnings": 1,
       "counts": {
         "findings": 16,
         "required": 7,

@@ -236,7 +236,7 @@ export function createPanel({ doc = document, onAnalyze, onOpenOptions, onShowQu
     const t0 = state.t0 || (state.t0 = Date.now());
     const order = STAGES.map(s => s[0]).filter(s => s !== 'repair' || state.stage === 'repair');
     const cur = order.indexOf(state.stage || 'capture');
-    const elapsed = h('span', { kp: 'elapsed' }, '0 sn');
+    const elapsed = h('span', { kp: 'elapsed' }, `${Math.round((Date.now() - t0) / 1000)} sn`);
     body.append(h('div', { class: 'card', kp: 'loading' },
       h('ul', { class: 'steps' }, order.map((id, i) => h('li', { class: i < cur ? 'ok' : i === cur ? 'on' : '' },
         h('span', { class: 'dot' }, i < cur ? icon('check') : ''), STAGES.find(s => s[0] === id)[1]))),

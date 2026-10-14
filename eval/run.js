@@ -39,9 +39,9 @@ async function main() {
 
   if (o.replay) {
     const dir = path.resolve(String(o.replay));
-    tag = path.basename(dir) + '-replay';
+    tag = o.tag ? String(o.tag) : path.basename(dir) + '-replay';   // --tag <name>: re-score in place after a scorer fix
     const meta = JSON.parse(fs.readFileSync(path.join(dir, '_meta.json'), 'utf8'));
-    engineInfo = { mode: 'llm-replay', ...meta };
+    engineInfo = { ...meta, mode: meta.mode === 'llm' ? 'llm' : 'llm-replay', replayed_from: meta.date || null };
     llmFactory = (doc) => {
       const saved = JSON.parse(fs.readFileSync(path.join(dir, doc.id + '.json'), 'utf8'));
       let i = 0;
@@ -110,6 +110,11 @@ async function main() {
     const { clauses } = segment(doc.blocks, { maxChars: 120000 });
     const points = locatePoints(doc.gold, doc.blocks);
     const m = matchFindings(report.findings, points, clauses);
+    // what the user actually sees: findings plus the "check this yourself" warnings (rule-only / low confidence),
+    // which are shown in the panel but never scored. Reported separately, never mixed into precision.
+    const warnings = report.uncertain.filter(u => (u.kind === 'rule_only' || u.kind === 'low_confidence') && u.clause_id && u.category)
+      .map(u => ({ category: u.category, severity: 'low', confidence: 0, evidence: { clause_id: u.clause_id, quote: u.quote || '' } }));
+    const seen = matchFindings([...report.findings, ...warnings], points, clauses);
     const rejected = report.rejected.filter(r => r.reason !== 'DUPLICATE');
     // with a model configured, a fallback-to-rules result is NOT a model result
     const modelFailed = !!llmFactory && !!report.engine.error;
@@ -124,6 +129,7 @@ async function main() {
       low_confidence: report.uncertain.filter(u => u.kind === 'low_confidence').length,
       uncertain_kinds: report.uncertain.reduce((a, u) => ((a[u.kind] = (a[u.kind] || 0) + 1), a), {}),
       usage: report.trace.usage,
+      warnings: warnings.length, caught_with_warnings: seen.counts.caught,
       ...m
     });
     console.log(modelFailed ? `MODEL HATASI (toplama dahil edilmedi): ${report.engine.error.message}`

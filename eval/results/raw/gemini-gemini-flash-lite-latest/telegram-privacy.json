@@ -1,0 +1,16 @@
+{
+  "doc": "telegram-privacy",
+  "prompt_version": "2026-10-13.1",
+  "responses": [
+    {
+      "text": "{\n  \"document_type\": \"privacy_policy\",\n  \"language\": \"en\",\n  \"summary_tr\": \"Bu gizlilik politikası, Telegram'ın verilerinizi nasıl topladığını, sakladığını ve işlediğini açıklamaktadır. Temel hesap bilgilerinizin yanı sıra isteğe bağlı konum veya çeviri verilerinin işlenmesi, grup şirketleri ve kolluk kuvvetleri ile veri paylaşımı kurallarını içerir. Ayrıca kullanıcıların verileri üzerindeki hakları ve hesap silme prosedürleri bu metinde yer almaktadır.\",\n  \"findings\": [\n    {\n      \"clause_id\": \"c60\",\n      \"category\": \"data_sharing\",\n      \"severity\": \"high\",\n      \"quote\": \"If Telegram receives a valid order from the relevant judicial authorities that confirms you're a suspect in a case involving criminal activities that violate the Telegram Terms of Service, we will perform a legal analysis of the request and may disclose your IP address and phone number to the relevant authorities.\",\n      \"explanation_tr\": \"Yasal bir soruşturma durumunda IP adresiniz ve telefon numaranız ilgili makamlarla paylaşılabilir.\",\n      \"confidence\": 0.95\n    },\n    {\n      \"clause_id\": \"c74\",\n      \"category\": \"unilateral_change\",\n      \"severity\": \"medium\",\n      \"quote\": \"Any changes to this Privacy Policy will become effective when we post the revised Privacy Policy on this page www.telegram.org/privacy.\",\n      \"explanation_tr\": \"Şirket, gizlilik politikasını tek taraflı olarak değiştirebilir ve yeni kurallar internet sitesinde yayınlandığı anda yürürlüğe girer.\",\n      \"confidence\": 0.9\n    }\n  ],\n  \"injection_suspected\": [],\n  \"uncertainties\": []\n}",
+      "usage": {
+        "completion_tokens": 404,
+        "prompt_tokens": 8289,
+        "total_tokens": 8693
+      },
+      "model": "gemini-flash-lite-latest",
+      "ms": 6249
+    }
+  ]
+}

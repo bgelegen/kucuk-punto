@@ -32,6 +32,17 @@ export function verifyFindings(findings, clauses) {
     if (!hit) {
       for (const c of clauses) { const h = findInSource(c.text, f.quote); if (h) { clause = c; hit = h; corrected = true; break; } }
     }
+    if (!hit) {
+      // long paragraphs are split into several clauses at sentence boundaries; a quote may legitimately
+      // run across that cut. Accept it only across two consecutive clauses of the same paragraph.
+      for (let i = 0; i + 1 < clauses.length && !hit; i++) {
+        const a = clauses[i], b = clauses[i + 1];
+        if (a.block == null || a.block !== b.block) continue;
+        const joined = a.text + ' ' + b.text;
+        const h = findInSource(joined, f.quote);
+        if (h && h.start < a.text.length && h.end > a.text.length + 1) { clause = a; hit = h; corrected = f.clause_id !== a.id && f.clause_id !== b.id; }
+      }
+    }
     if (!hit) { rejected.push({ finding: f, reason: 'QUOTE_NOT_FOUND' }); continue; }
     accepted.push({
       ...f,

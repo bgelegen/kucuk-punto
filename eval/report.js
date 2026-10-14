@@ -11,7 +11,10 @@ const esc = s => String(s).replace(/\|/g, '\\|').replace(/\n/g, ' ');
 function systemSection(r) {
   const title = r.engine.mode === 'rules' ? 'Kural motoru (LLM yok, temel çizgi)' : `${r.engine.mode === 'llm-replay' ? 'LLM (kayıtlı yanıtlardan yeniden puanlandı)' : 'LLM'}: ${r.engine.provider} · ${r.engine.model}`;
   const L = [];
-  L.push(`### ${title}`, '', `Çalıştırma: \`${r.date.slice(0, 16).replace('T', ' ')}\` · etiket \`${r.tag}\``, '');
+  const when = r.engine.replayed_from
+    ? `Model çağrıları: \`${r.engine.replayed_from.slice(0, 16).replace('T', ' ')} UTC\` · kayıtlı yanıtlarla yeniden puanlama: \`${r.date.slice(0, 16).replace('T', ' ')} UTC\``
+    : `Çalıştırma: \`${r.date.slice(0, 16).replace('T', ' ')} UTC\``;
+  L.push(`### ${title}`, '', `${when} · etiket \`${r.tag}\``, '');
   if (r.docs_failed) L.push(`> ⚠️ ${r.docs_failed} belgede model yanıt vermedi (sağlayıcı hatası). Bu belgeler aşağıda "model hatası" olarak gösterildi ve toplama **dahil edilmedi**; toplam ${r.docs_ok}/${r.docs.length} belge üzerindendir.`, '');
   L.push(`**Toplam${r.docs_failed ? ` (${r.docs_ok}/${r.docs.length} belge)` : ''}:** kesinlik **${pct(r.precision)}**, duyarlılık **${pct(r.recall)}**, F1 **${pct(r.f1)}** · ${r.totals.findings} bulgu, ${r.totals.caught}/${r.totals.required} zorunlu nokta yakalandı, ${r.totals.false_alarms} yanlış alarm, ${r.totals.duplicates} tekrar, ${r.totals.optional_caught} isteğe bağlı nokta.`, '');
   L.push('| Belge | Skor | Bulgu | Yakalanan | Kaçırılan | Yanlış alarm | Tekrar | Kesinlik | Duyarlılık | Reddedilen iddia | Süre |', '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|');
@@ -27,6 +30,8 @@ function systemSection(r) {
     const accepted = r.totals.findings;
     const totalRej = Object.values(rej).reduce((a, b) => a + b, 0);
     L.push(`**Kanıt doğrulama:** modelin ürettiği ${accepted + totalRej} iddiadan ${accepted} tanesinin alıntısı metinde bulundu (${pct(accepted / Math.max(1, accepted + totalRej))}); ${totalRej} iddia reddedildi ${totalRej ? '(' + Object.entries(rej).map(([k, v]) => `${k}: ${v}`).join(', ') + ')' : ''}.`);
+    const cw = okDocs.reduce((a, d) => a + (d.caught_with_warnings ?? d.counts.caught), 0), req = okDocs.reduce((a, d) => a + d.counts.required, 0), nw = okDocs.reduce((a, d) => a + (d.warnings || 0), 0);
+    if (okDocs.some(d => d.caught_with_warnings != null)) L.push(`**Kullanıcının gördüğü toplam:** modelin bulgularına paneldeki "Emin olamadıklarımız" uyarıları (${nw} kural uyarısı) eklenince ${cw}/${req} nokta görünür hâle geliyor (duyarlılık ${pct(req ? cw / req : null)}). Bu uyarılar skora katılmaz ve kesinlik hesabına girmez; kullanıcıya "kendiniz kontrol edin" diye gösterilir.`);
     L.push(`**Şema:** ${okDocs.filter(d => d.attempts === 1 && !d.schema_errors).length}/${okDocs.length} belgede ilk denemede geçerli JSON; onarım isteyen ${okDocs.filter(d => d.repaired).length}.`, '');
     const ex = okDocs.flatMap(d => (d.rejected_examples || []).map(x => ({ ...x, doc: d.doc }))).slice(0, 6);
     if (ex.length) {

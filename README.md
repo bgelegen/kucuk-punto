@@ -10,6 +10,8 @@ Bir sözleşme sayfası açtığınızda eklenti sayfayı tanır. "Analiz et"e b
 
 <sub>Ekran görüntüsü otomatik testten alındı (yerel demo modeli `kp-mock-1`). Gerçek Gemini çıktısı için demo videosuna bakın.</sub>
 
+**Demo videosu:** [`docs/demo.mp4`](docs/demo.mp4) (43 sn, Cypress kaydı, gerçek Gemini `gemini-flash-lite-latest`). Videodaki iki düzenleme açıkça belirtilmiştir: Cypress'in boş açılış ekranı (20 sn) kesildi ve Netflix analizinde modelin yanıt beklediği 52 saniye **8× hızlandırıldı** (videoda etiketli). Kesilmemiş ham kayıt: [`docs/demo-ham.mp4`](docs/demo-ham.mp4) (108 sn).
+
 ---
 
 ## İçindekiler
@@ -58,7 +60,7 @@ Chrome'da `chrome://extensions` → sağ üstte **Geliştirici modu** → **Pake
 ```bash
 npm install          # esbuild, cypress, @page-agent/page-controller (yalnızca karşılaştırma için)
 npm run build        # src/ → extension/dist/
-npm test             # 26 birim testi
+npm test             # 27 birim testi
 cp .env.example .env # eval ve Cypress için: KP_API_KEY=...
 ```
 
@@ -179,6 +181,7 @@ Ayrıntılı tehdit modeli: [SECURITY.md](SECURITY.md). Ölçümler: [EVAL.md �
 - Her talimata uyan "itaatkâr" bir modelle saf boru hattının skoru **0**'a düşüyor; Küçük Punto'nun skoru değişmiyor.
 - Filtreden kaçan görünür bir talimatla model yine kandırılabiliyor. Sistem bu durumda yanlış bir "düşük risk" göstermiyor, çelişkiyi fark edip **Belirsiz** diyor.
 - Karantina filtresi, korpustaki 1.723 gerçek sözleşme cümlesinin hiçbirini yanlışlıkla talimat saymadı.
+- Gerçek modelle (`gemini-flash-lite-latest`): bu model gizli talimatlara saf boru hattında da uymadı (skor 90). Küçük Punto'da talimatlar modele hiç ulaşmadı; filtreden kaçan görünür talimatı ise modelin kendisi `injection_suspected` olarak bildirdi. Savunma, modelin iyi davranmasına güvenmeden çalışır: itaatkâr model senaryosu yukarıda.
 
 ---
 
@@ -209,7 +212,13 @@ npm run eval:gemini                   # ikisi birden
 npm run eval -- --replay eval/results/raw/<etiket>   # kayıtlı yanıtlarla, API'siz yeniden puanla
 ```
 
-Kural motoru temel çizgisi: kesinlik %74,7, duyarlılık %62,9 (39/62). LLM sonuçları aynı tabloya eklenir.
+| Sistem | Kesinlik | Duyarlılık | Not |
+|---|---:|---:|---|
+| Kural motoru (LLM yok) | %74,7 | %62,9 | 257 bulgu, 65 yanlış alarm: çok gürültülü |
+| Gemini `gemini-flash-lite-latest` + Küçük Punto | **%94,3** | %45,2 | 35 bulgu, 2 yanlış alarm |
+| Aynısı + paneldeki "kontrol edin" uyarıları | (skora girmez) | %53,2 | kullanıcının gördüğü toplam |
+
+Modelin 36 iddiasından 35'inin alıntısı metinde birebir bulundu; reddedilen tek iddiada model iki cümleyi "..." ile birleştirmişti. Yorum ve belge bazında tablolar: [EVAL.md](EVAL.md).
 
 ---
 
@@ -217,7 +226,7 @@ Kural motoru temel çizgisi: kesinlik %74,7, duyarlılık %62,9 (39/62). LLM son
 
 | Komut | Ne test eder |
 |---|---|
-| `npm test` | 26 birim testi: normalizasyon, parçalama, alıntı doğrulama, şema, skor, karantina (TR/EN, yanlış pozitif), onarım turu, çelişki durumu, nonce, yük sınırları, sağlayıcı hatalarında yeniden deneme |
+| `npm test` | 27 birim testi: normalizasyon, parçalama, alıntı doğrulama (paragraf bölünmesini aşan alıntı dâhil), şema, skor, karantina (TR/EN, yanlış pozitif), onarım turu, çelişki durumu, nonce, yük sınırları, sağlayıcı hatalarında yeniden deneme |
 | `npm run test:e2e` | **Gerçek paketlenmemiş eklenti** Chromium'da (Playwright): ayarlar sayfası, tespit kutusu, rapor, her alıntının sayfada birebir bulunması, rozet, "Metinde göster", injection sayfası, XSS denemesi, anahtarsız mod, sağlayıcı hatası. Kurulum: `npm i -D playwright && npx playwright install chromium` |
 | `npm run eval:injection` | Okuyucu karşılaştırması, ablasyon ve hedefli saldırılar |
 | `npm run demo` | Cypress demo videosu → `docs/demo.mp4` (≤ 90 sn kontrolü) |
@@ -227,6 +236,12 @@ Kural motoru temel çizgisi: kesinlik %74,7, duyarlılık %62,9 (39/62). LLM son
 ```bash
 cp .env.example .env    # KP_API_KEY=... (Gemini)
 npm run demo            # gerçek modelle; anahtar yoksa .env içine KP_MOCK=1 yazın (ekranda "mock" yazar)
+```
+
+Teslim edilen video, ham kayıttan şu komutla üretildi (açılış ekranı kesilir, model beklemesi etiketle 8× hızlanır):
+
+```bash
+ffmpeg -i docs/demo-ham.mp4 -filter_complex "[0:v]trim=20.3:23.0,setpts=PTS-STARTPTS[a];[0:v]trim=23.0:73.5,setpts=(PTS-STARTPTS)/8,drawtext=textfile=etiket.txt:fontsize=26:fontcolor=white:box=1:boxcolor=0x16263d@0.92:x=(w-tw)/2:y=h-th-40[b];[0:v]trim=73.5,setpts=PTS-STARTPTS[c];[a][b][c]concat=n=3:v=1:a=0[v]" -map "[v]" -c:v libx264 -crf 22 docs/demo.mp4
 ```
 
 Video senaryosu (`cypress/e2e/demo.cy.js`):

@@ -631,7 +631,7 @@ footer { padding: 10px 16px; border-top: 1px solid #e6e2d8; background: #f4f1ea;
       const t0 = state.t0 || (state.t0 = Date.now());
       const order = STAGES.map((s) => s[0]).filter((s) => s !== "repair" || state.stage === "repair");
       const cur = order.indexOf(state.stage || "capture");
-      const elapsed = h("span", { kp: "elapsed" }, "0 sn");
+      const elapsed = h("span", { kp: "elapsed" }, `${Math.round((Date.now() - t0) / 1e3)} sn`);
       body.append(h(
         "div",
         { class: "card", kp: "loading" },

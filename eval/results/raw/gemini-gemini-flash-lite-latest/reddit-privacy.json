@@ -1,0 +1,16 @@
+{
+  "doc": "reddit-privacy",
+  "prompt_version": "2026-10-13.1",
+  "responses": [
+    {
+      "text": "{\n  \"document_type\": \"privacy_policy\",\n  \"language\": \"en\",\n  \"summary_tr\": \"Bu metin Reddit gizlilik politikasını açıklamaktadır. Hangi verilerin toplandığı, bu verilerin reklam, analiz ve hizmetlerin iyileştirilmesi amacıyla nasıl kullanıldığı ve üçüncü taraflarla nasıl paylaşıldığı detaylandırılmıştır. Ayrıca kullanıcıların hesap silme, verilerine erişme ve pazarlama iletişimlerinden çıkma gibi gizlilik hakları ile seçimleri belirtilmiştir.\",\n  \"findings\": [\n    {\n      \"clause_id\": \"c46\",\n      \"category\": \"data_sharing\",\n      \"severity\": \"medium\",\n      \"quote\": \"third-party ad serving and measurement providers who help us and advertisers serve relevant ads and measure the performance of ads (by disclosing information such as cookie IDs, your IP address, and/or a hashed version of your email; these third parties may combine that information with other information they already have about you to provide services to Reddit)\",\n      \"explanation_tr\": \"Çerez kimlikleri ve IP adresiniz gibi bilgiler reklam ve ölçüm ortaklarıyla paylaşılır; bu kurumlar verilerinizi ellerindeki diğer bilgilerle birleştirebilir.\",\n      \"confidence\": 0.95\n    },\n    {\n      \"clause_id\": \"c68\",\n      \"category\": \"governing_law\",\n      \"severity\": \"medium\",\n      \"quote\": \"By accessing or using the Services or otherwise providing information to us, you consent to the processing, transfer, and storage of information in and to the United States and other countries, where you may not have the same rights as you do under local law.\",\n      \"explanation_tr\": \"Verileriniz ABD ve diğer ülkelere aktarılır ve buralarda yerel yasalarınızdaki haklara sahip olmayabilirsiniz.\",\n      \"confidence\": 0.9\n    },\n    {\n      \"clause_id\": \"c93\",\n      \"category\": \"unilateral_change\",\n      \"severity\": \"medium\",\n      \"quote\": \"By continuing to use our Services after Privacy Policy changes go into effect, you agree to be bound by the revised policy.\",\n      \"explanation_tr\": \"Gizlilik politikasında yapılacak değişikliklerden sonra hizmetleri kullanmaya devam etmeniz, yeni şartları kabul ettiğiniz anlamına gelir.\",\n      \"confidence\": 0.95\n    }\n  ],\n  \"injection_suspected\": [],\n  \"uncertainties\": []\n}",
+      "usage": {
+        "completion_tokens": 547,
+        "prompt_tokens": 8896,
+        "total_tokens": 9443
+      },
+      "model": "gemini-flash-lite-latest",
+      "ms": 10607
+    }
+  ]
+}

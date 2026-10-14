@@ -34,6 +34,17 @@ Kanıtsız iddia zaten gösterilmediği için ölçülmez. Bunun yerine **kanıt
 1. **Kural motoru (LLM yok):** İngilizce ve Türkçe düzenli ifadeler (`src/core/baseline.js`). Hem temel çizgi hem de çalışma anında modelin çapraz kontrolü.
 2. **LLM + Küçük Punto boru hattı:** Kendi anahtarınızla `npm run eval -- --provider gemini`. Ham model yanıtları `eval/results/raw/<etiket>/` altına kaydedilir. `--replay` ile API'ye gitmeden yeniden puanlanabilir.
 
+## Hangi model kullanıldı?
+
+Değerlendirme Google Gemini'nin **ücretsiz katmanıyla** yapıldı. 13 Ekim'deki ilk denemede `gemini-flash-latest` yalnızca Netflix belgesini tamamlayabildi (5/5 nokta, 0 yanlış alarm); ardından önce 503 "aşırı yoğun", sonra günlük ücretsiz kota hatası verdi. İlk sürüm bu durumda kural sonuçlarını "Gemini" diye raporluyordu. Bu hata düzeltildi: model yanıt vermediyse belge **"model hatası"** olarak işaretlenir ve toplama girmez. 14 Ekim'de çalışan model `gemini-flash-lite-latest` oldu. Aşağıdaki LLM sonuçları bu modele aittir. Daha güçlü bir modelle aynı komut tekrarlanabilir (`npm run eval -- --provider gemini --model <ad>`).
+
+## Sonuçların yorumu (14 Ekim çalıştırması)
+
+- **Kesinlik ile duyarlılık arasındaki denge.** Model çok seçici: 35 bulgu, 2 yanlış alarm (%94 kesinlik). Ama zorunlu noktaların yarısından azını buluyor (%45). Kurallar daha fazlasını yakalıyor (%63), fakat 257 bulgu ve 65 yanlış alarmla kullanıcının okuyamayacağı kadar gürültülü.
+- **Sistem bu yüzden ikisini birlikte kullanır.** Modelin hiç bildirmediği kategorileri kural motoru panelde "Emin olamadıklarımız – kendiniz kontrol edin" olarak gösterir. Bu uyarılarla kullanıcının gördüğü noktalar %53'e çıkar. Uyarılar skora ve kesinliğe katılmaz.
+- **En çok kaçırılan yer gizlilik politikaları:** Reddit'te 2/12, Telegram'da 1/7. Model uzun politikalarda birkaç "en önemli" maddeye odaklanıp az bulgu döndürüyor. Kategori tablosu hangi risk türlerinin kaçtığını gösterir.
+- **Kanıt doğrulama gerçek modelde de işe yaradı.** 36 iddiadan 1'i reddedildi; model iki ayrı cümleyi "..." ile birleştirmişti. İlk sürüm bir iddiayı daha haksız yere reddediyordu: alıntı birebir doğruydu ama uzun bir paragrafın parçalara bölündüğü yeri aşıyordu. Doğrulayıcı düzeltildi (yalnızca aynı paragrafın ardışık iki parçası) ve kayıtlı yanıtlar API'ye gidilmeden yeniden puanlandı (`--replay`).
+
 ## Genel sınırlılıklar
 
 - 6 belge ve 62 zorunlu nokta küçük bir örneklem. Sonuçlar yön göstericidir, istatistiksel anlamlılık testi yapılmadı.
