@@ -13,7 +13,7 @@ const PORT = Number(process.env.KP_PORT || 5173);
 export default defineConfig({
   allowCypressEnv: false,   // nothing secret goes through Cypress.env(); the key stays in the Node harness
   video: true,
-  videoCompression: 28,
+  videoCompression: false,  // keep the recorder's own quality (no second, lossy pass)
   viewportWidth: 1280,
   viewportHeight: 800,
   defaultCommandTimeout: 10000,
@@ -23,6 +23,18 @@ export default defineConfig({
     supportFile: false,
     includeShadowDom: true,
     async setupNodeEvents(on, config) {
+      // record in Full HD: the video is as large as the browser window, and at 1920×1080 the
+      // 1280×800 app is shown at 100 % instead of being scaled down to ~62 %
+      on('before:browser:launch', (browser = {}, launchOptions) => {
+        if (browser.name === 'electron' && browser.isHeadless) {
+          launchOptions.preferences.width = 1920;
+          launchOptions.preferences.height = 1080;
+        }
+        if (browser.family === 'chromium' && browser.name !== 'electron' && browser.isHeadless) {
+          launchOptions.args.push('--window-size=1920,1080', '--force-device-scale-factor=1');
+        }
+        return launchOptions;
+      });
       // the newest report file the panel downloaded (null if the browser saved none)
       on('task', {
         readReportDownload() {
