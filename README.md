@@ -27,7 +27,7 @@ Bir sözleşme sayfası açtığınızda eklenti sayfayı tanır. "Analiz et"e b
 | **Analiz geçmişi** | Ayarlar sayfasında analiz ettiğiniz sözleşmeler, tarih ve skorla; tek tıkla silinebilir | Yalnızca parmak izi, skor ve alıntılar bu tarayıcıda durur |
 | **Karanlık tema, kısayol** | Sistem karanlık temadaysa panel de karanlık; <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd> paneli açar | |
 
-**Demo videosu:** [`docs/demo.mp4`](docs/demo.mp4) (43 sn, Cypress kaydı, gerçek Gemini `gemini-flash-lite-latest`). Videodaki iki düzenleme açıkça belirtilmiştir: Cypress'in boş açılış ekranı (20 sn) kesildi ve Netflix analizinde modelin yanıt beklediği 52 saniye **8× hızlandırıldı** (videoda etiketli). Kesilmemiş ham kayıt: [`docs/demo-ham.mp4`](docs/demo-ham.mp4) (108 sn).
+**Demo videosu:** [`docs/demo.mp4`](docs/demo.mp4) (61 sn, Cypress kaydı, gerçek Gemini `gemini-flash-lite-latest`, hızlandırma yok). Kayıttan yalnızca Cypress'in boş açılış ekranı (20,6 sn) çıkarıldı; başa 2,6 sn'lik bir başlık kartı eklendi ve son kare 2 sn uzatıldı. Ham kayıt: [`docs/demo-ham.mp4`](docs/demo-ham.mp4) (77 sn). Paylaşım için yalnızca uygulama alanını gösteren kırpılmış sürüm: [`docs/demo-linkedin.mp4`](docs/demo-linkedin.mp4).
 
 ---
 
@@ -280,10 +280,12 @@ cp .env.example .env    # KP_API_KEY=... (Gemini)
 npm run demo            # gerçek modelle; anahtar yoksa .env içine KP_MOCK=1 yazın (ekranda "mock" yazar)
 ```
 
-Teslim edilen video, ham kayıttan şu komutla üretildi (açılış ekranı kesilir, model beklemesi etiketle 8× hızlanır):
+Teslim edilen video, ham kayıttan şu adımlarla üretildi (yalnızca açılış ekranı kesilir, içerik hızlandırılmaz):
 
 ```bash
-ffmpeg -i docs/demo-ham.mp4 -filter_complex "[0:v]trim=20.3:23.0,setpts=PTS-STARTPTS[a];[0:v]trim=23.0:73.5,setpts=(PTS-STARTPTS)/8,drawtext=textfile=etiket.txt:fontsize=26:fontcolor=white:box=1:boxcolor=0x16263d@0.92:x=(w-tw)/2:y=h-th-40[b];[0:v]trim=73.5,setpts=PTS-STARTPTS[c];[a][b][c]concat=n=3:v=1:a=0[v]" -map "[v]" -c:v libx264 -crf 22 docs/demo.mp4
+ffmpeg -i docs/demo-ham.mp4 -ss 20.6 -vf "tpad=stop_mode=clone:stop_duration=2" ana.mp4   # açılış ekranı kesilir, son kare 2 sn
+ffmpeg -i baslik.mp4 -i ana.mp4 -filter_complex "[0:v][1:v]concat=n=2:v=1:a=0" docs/demo.mp4  # 2,6 sn başlık kartı + kayıt
+# demo-linkedin.mp4: aynı kayıt, crop=792:496:467:80 ile yalnızca uygulama alanı, 1280×800'e ölçeklenmiş
 ```
 
 Video senaryosu (`cypress/e2e/demo.cy.js`):
