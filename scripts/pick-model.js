@@ -9,10 +9,10 @@ export const GEMINI_CANDIDATES = ['gemini-flash-latest', 'gemini-3.8-flash', 'ge
 /**
  * @returns {Promise<{model:string|null, tried:{model,ok,code?,message?}[], authError:boolean, overloaded:boolean}>}
  */
-export async function pickModel({ provider = 'gemini', apiKey, baseUrl, model, exclude = [], fetchImpl = globalThis.fetch, log = () => {} } = {}) {
+export async function pickModel({ provider = 'gemini', apiKey, baseUrl, model, prefer = [], exclude = [], fetchImpl = globalThis.fetch, log = () => {} } = {}) {
   const preset = PRESETS[provider];
   if (!preset) throw new Error('Bilinmeyen sağlayıcı: ' + provider);
-  const candidates = (model ? [model] : provider === 'gemini' ? [...GEMINI_CANDIDATES] : [preset.model]).filter(m => !exclude.includes(m));
+  const candidates = [...new Set(model ? [model] : provider === 'gemini' ? [...prefer, ...GEMINI_CANDIDATES] : [preset.model])].filter(m => !exclude.includes(m));
   const tried = [];
   for (let i = 0; i < candidates.length; i++) {
     const m = candidates[i];

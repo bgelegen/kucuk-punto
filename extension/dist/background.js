@@ -707,6 +707,80 @@ function computeScore(findings) {
   return { score, band: band.id, band_tr: band.tr, raw: Math.round(raw * 100) / 100, breakdown };
 }
 
+// src/core/history.js
+function fingerprint(s) {
+  let h = 2166136261;
+  const t = String(s);
+  for (let i = 0; i < t.length; i++) {
+    h ^= t.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h.toString(16).padStart(8, "0");
+}
+function documentKey(meta = {}) {
+  const raw = meta.canonical || meta.url || "";
+  try {
+    const u = new URL(raw);
+    return (u.origin + u.pathname).replace(/\/+$/, "").toLowerCase();
+  } catch {
+    return String(raw).toLowerCase();
+  }
+}
+var findingId = (f) => `${f.category}:${fingerprint(norm(f.evidence?.quote || f.quote || ""))}`;
+var clauseFingerprint = (text) => fingerprint(norm(text));
+var MAX_CLAUSES = 3e3;
+var brief = (f, clauseIndex) => ({
+  id: findingId(f),
+  cfp: clauseIndex?.[f.evidence?.clause_id] || null,
+  category: f.category,
+  category_tr: f.category_tr,
+  severity: f.severity,
+  quote: String(f.evidence?.quote || "").slice(0, 220)
+});
+function makeSnapshot(report, textFingerprint, clauseIndex = {}) {
+  return {
+    date: report.meta.analysed_at,
+    title: report.meta.title,
+    host: report.meta.host,
+    text: textFingerprint,
+    score: report.score,
+    band: report.band,
+    score_status: report.score_status,
+    clauses: [...new Set(Object.values(clauseIndex))].slice(0, MAX_CLAUSES),
+    findings: report.findings.map((f) => brief(f, clauseIndex))
+  };
+}
+function compareWithPrevious(prev, report, textFingerprint, clauseIndex = {}) {
+  if (!prev) return { status: "first" };
+  const base = { prev_date: prev.date, prev_score: prev.score };
+  if (prev.text === textFingerprint) return { status: "same", ...base };
+  const now = report.findings.map((f) => brief(f, clauseIndex));
+  const delta = report.score - prev.score;
+  if (Array.isArray(prev.clauses) && prev.clauses.length && Object.keys(clauseIndex).length) {
+    const before2 = new Set(prev.clauses), after2 = new Set(Object.values(clauseIndex));
+    const added2 = now.filter((f) => f.cfp && !before2.has(f.cfp));
+    const removed2 = prev.findings.filter((f) => f.cfp && !after2.has(f.cfp));
+    const seen = new Set(added2.map((f) => f.category + f.cfp));
+    const checks = (report.uncertain || []).filter((u) => (u.kind === "rule_only" || u.kind === "low_confidence") && u.category && clauseIndex[u.clause_id] && !before2.has(clauseIndex[u.clause_id])).map((u) => ({ category: u.category, category_tr: u.category_tr || u.category, quote: String(u.quote || "").slice(0, 220), cfp: clauseIndex[u.clause_id] })).filter((u) => !seen.has(u.category + u.cfp) && seen.add(u.category + u.cfp));
+    return {
+      status: "changed",
+      ...base,
+      score_delta: delta,
+      by: "clause",
+      clauses_added: [...after2].filter((x) => !before2.has(x)).length,
+      clauses_removed: [...before2].filter((x) => !after2.has(x)).length,
+      new_ids: added2.map((f) => f.id),
+      added: added2,
+      removed: removed2,
+      checks
+    };
+  }
+  const before = new Set(prev.findings.map((f) => f.id)), after = new Set(now.map((f) => f.id));
+  const added = now.filter((f) => !before.has(f.id));
+  const removed = prev.findings.filter((f) => !after.has(f.id));
+  return { status: "changed", ...base, score_delta: delta, by: "quote", new_ids: added.map((f) => f.id), added, removed };
+}
+
 // src/core/analyze.js
 var REPORT_VERSION = 1;
 var DISCLAIMER_TR = "Bu rapor hukuki tavsiye değildir. Yapay zekâ ve kurallarla üretilmiş otomatik bir özettir; sözleşmenin yerine geçmez ve hata içerebilir. Önemli kararlar için metnin tamamını okuyun ve gerekirse bir hukukçuya danışın.";
@@ -781,14 +855,14 @@ async function analyze({ blocks, hidden = [], meta = {}, llm = null, options = {
   const scored = computeScore(confident.map((f) => ({ ...f, confidence: f.source === "rule" ? 1 : f.confidence })));
   const rulesScore = modelOut ? computeScore(verifyFindings(rules, clauses).accepted.map((f) => ({ ...f, confidence: 1 }))).score : scored.score;
   const uncertain = [];
-  for (const f of lowConfidence) uncertain.push({ kind: "low_confidence", category: f.category, quote: f.evidence.quote, clause_id: f.clause_id, text_tr: `Model bu maddeden emin değil (güven %${Math.round(f.confidence * 100)}); skora katılmadı.` });
+  for (const f of lowConfidence) uncertain.push({ kind: "low_confidence", category: f.category, category_tr: CATEGORIES[f.category].tr, quote: f.evidence.quote, clause_id: f.clause_id, text_tr: `Model bu maddeden emin değil (güven %${Math.round(f.confidence * 100)}); skora katılmadı.` });
   if (modelOut) {
     const modelCats = new Set(findings.map((f) => f.category));
     const seen = /* @__PURE__ */ new Set();
     for (const r of rules) {
       if (modelCats.has(r.category) || seen.has(r.category)) continue;
       seen.add(r.category);
-      uncertain.push({ kind: "rule_only", category: r.category, quote: r.quote, clause_id: r.clause_id, text_tr: `Kurallar "${CATEGORIES[r.category].tr}" ile ilgili bir ifade buldu ama model bunu risk olarak raporlamadı. Kendiniz kontrol edin.` });
+      uncertain.push({ kind: "rule_only", category: r.category, category_tr: CATEGORIES[r.category].tr, quote: r.quote, clause_id: r.clause_id, text_tr: `Kurallar "${CATEGORIES[r.category].tr}" ile ilgili bir ifade buldu ama model bunu risk olarak raporlamadı. Kendiniz kontrol edin.` });
     }
     for (const u of modelOut.uncertainties) uncertain.push({ kind: "model", text_tr: `${u.topic_tr}: ${u.reason_tr}` });
   }
@@ -797,6 +871,10 @@ async function analyze({ blocks, hidden = [], meta = {}, llm = null, options = {
   if (modelOut && modelOut.document_type === "not_legal") uncertain.push({ kind: "not_legal", text_tr: "Model bu sayfanın bir sözleşme veya politika metni olmadığını düşünüyor; rapor güvenilir olmayabilir." });
   const conflict = !!modelOut && rulesScore >= 50 && scored.score < rulesScore / 3;
   if (conflict) uncertain.push({ kind: "model_rule_conflict", text_tr: `Model düşük risk bildirdi (skor ${scored.score}) ama anahtar kelime kuralları çok sayıda riskli ifade buldu (kural skoru ${rulesScore}). Bu tutarsızlık bir model hatası veya sayfadaki bir manipülasyon olabilir; maddeleri kendiniz kontrol edin.` });
+  const visibleChars = blocks.reduce((a, b) => a + String(b.text || "").length, 0);
+  const hiddenChars = hiddenClassified.reduce((a, h) => a + h.text.length, 0);
+  if (hiddenChars > 2e3 && hiddenChars > visibleChars) uncertain.push({ kind: "layout_suspect", text_tr: `Sayfadaki metnin çoğu (${hiddenChars.toLocaleString("tr-TR")} karakter) görünmez olarak işaretlendi. Sayfanın düzeni doğru okunamamış olabilir. Sözleşme metnini seçip sağ tıklayın ve "Küçük Punto ile seçili metni analiz et"i kullanın.` });
+  if (meta.selection) uncertain.push({ kind: "selection", text_tr: "Yalnızca sayfada seçtiğiniz metin incelendi; sözleşmenin geri kalanı bu rapora dâhil değil." });
   const benignHiddenChars = hiddenClassified.filter((h) => !h.suspicious).reduce((a, h) => a + h.text.length, 0);
   if (benignHiddenChars >= 400) uncertain.push({ kind: "hidden_content", text_tr: `Sayfada şu an görünmeyen yaklaşık ${benignHiddenChars.toLocaleString("tr-TR")} karakterlik metin var (kapalı bölüm, açılır menü vb.). Görmediğiniz metin analize alınmaz; önemli bir bölüm kapalıysa açıp yeniden analiz edin.` });
   if (!modelOut) uncertain.push({ kind: "rules_only", text_tr: llmError ? `Model kullanılamadı (${llmError.message}). Aşağıdakiler yalnızca anahtar kelime kurallarının sonucudur ve yanlış alarm içerebilir.` : "Model kullanılmadı. Aşağıdakiler yalnızca anahtar kelime kurallarının sonucudur ve yanlış alarm içerebilir." });
@@ -810,10 +888,10 @@ async function analyze({ blocks, hidden = [], meta = {}, llm = null, options = {
   security.detected = security.hidden_suspicious.length + security.quarantined.length + security.model_reported.length > 0;
   findings.sort((a, b) => SEVERITY[b.severity] - SEVERITY[a.severity] || b.confidence - a.confidence);
   progress("done");
-  return {
+  const report = {
     version: REPORT_VERSION,
     disclaimer_tr: DISCLAIMER_TR,
-    meta: { title: meta.title || "", host: meta.host || "", analysed_at: new Date(t0).toISOString() },
+    meta: { title: meta.title || "", host: meta.host || "", analysed_at: new Date(t0).toISOString(), selection: !!meta.selection },
     document_type: modelOut ? modelOut.document_type : null,
     summary_tr: modelOut ? modelOut.summary_tr : "",
     score: scored.score,
@@ -841,6 +919,8 @@ async function analyze({ blocks, hidden = [], meta = {}, llm = null, options = {
     engine: { ...engine, error: llmError },
     trace: { ...trace, ms: now() - t0, rule_hits: rules.length }
   };
+  Object.defineProperty(report, "clauseIndex", { value: Object.fromEntries(clauses.map((c) => [c.id, clauseFingerprint(c.text)])), enumerable: false });
+  return report;
 }
 
 // src/core/llm.js
@@ -1009,10 +1089,10 @@ function sanitizePayload(p) {
   const hidden = (Array.isArray(p.hidden) ? p.hidden : []).slice(0, L.hidden).filter((x) => x && typeof x.text === "string").map((x) => ({ text: x.text.slice(0, L.hiddenChars), reason: String(x.reason || "unknown").slice(0, 40) }));
   const m = p.meta && typeof p.meta === "object" ? p.meta : {};
   const str = (v, n) => (typeof v === "string" ? v : "").slice(0, n);
-  const meta = { title: str(m.title, 300), url: str(m.url, 2e3), host: str(m.host, 300), lang: str(m.lang, 20) };
+  const meta = { title: str(m.title, 300), url: str(m.url, 2e3), canonical: str(m.canonical, 2e3), host: str(m.host, 300), lang: str(m.lang, 20), selection: m.selection === true };
   return { blocks, hidden, meta, rulesOnly: p.rulesOnly === true };
 }
-async function handleAnalyze(rawPayload, { settings = DEFAULT_SETTINGS, fetchImpl = globalThis.fetch, randomBytes: randomBytes2, onProgress, llmOverride = null, timeoutMs, retry } = {}) {
+async function handleAnalyze(rawPayload, { settings = DEFAULT_SETTINGS, fetchImpl = globalThis.fetch, randomBytes: randomBytes2, onProgress, llmOverride = null, timeoutMs, retry, history: history2 = null } = {}) {
   let payload;
   try {
     payload = sanitizePayload(rawPayload);
@@ -1043,6 +1123,20 @@ async function handleAnalyze(rawPayload, { settings = DEFAULT_SETTINGS, fetchImp
     llm,
     options: { provider: llm ? cfg.provider : null, model: llm ? cfg.model : null, randomBytes: randomBytes2, onProgress }
   });
+  report.changes = null;
+  if (history2 && !payload.meta.selection) {
+    try {
+      const key = documentKey(payload.meta);
+      const fp = fingerprint(norm(payload.blocks.map((b) => b.text).join("\n")));
+      const prev = await history2.get(key);
+      const engine = report.engine.mode + (report.engine.error ? ":error" : "");
+      report.changes = compareWithPrevious(prev, report, fp, report.clauseIndex);
+      if (report.changes.status === "changed" && prev && prev.engine !== engine) report.changes.engine_changed = true;
+      await history2.set(key, { ...makeSnapshot(report, fp, report.clauseIndex), engine, url: payload.meta.url });
+    } catch {
+      report.changes = null;
+    }
+  }
   return { ok: true, report };
 }
 
@@ -1053,6 +1147,21 @@ async function getSettings() {
   return { ...DEFAULT_SETTINGS, ...s };
 }
 var randomBytes = (n) => crypto.getRandomValues(new Uint8Array(n));
+var HISTORY_KEY = "kp_history";
+var HISTORY_MAX = 300;
+var history = {
+  async get(key) {
+    const { [HISTORY_KEY]: h = {} } = await chrome.storage.local.get(HISTORY_KEY);
+    return h[key] || null;
+  },
+  async set(key, snap) {
+    const { [HISTORY_KEY]: h = {} } = await chrome.storage.local.get(HISTORY_KEY);
+    h[key] = snap;
+    const keys = Object.keys(h);
+    if (keys.length > HISTORY_MAX) keys.sort((a, b) => String(h[a].date).localeCompare(String(h[b].date))).slice(0, keys.length - HISTORY_MAX).forEach((k) => delete h[k]);
+    await chrome.storage.local.set({ [HISTORY_KEY]: h });
+  }
+};
 var fromOurContentScript = (sender) => sender && sender.id === chrome.runtime.id && sender.tab && typeof sender.tab.id === "number";
 function safePost(port, msg) {
   try {
@@ -1074,6 +1183,7 @@ chrome.runtime.onConnect.addListener((port) => {
       settings,
       fetchImpl: fetch.bind(globalThis),
       randomBytes,
+      history,
       onProgress: (stage) => safePost(port, { type: "stage", stage })
     }).catch((e) => ({ ok: false, error: { code: "INTERNAL", message: "Beklenmeyen hata: " + (e?.message || e) } }));
     if (result.ok) setBadge(port.sender.tab.id, result.report);
@@ -1113,5 +1223,10 @@ chrome.action.onClicked.addListener((tab) => {
   if (tab.id != null) chrome.tabs.sendMessage(tab.id, { type: "kp:toggle" }).catch(() => chrome.runtime.openOptionsPage());
 });
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
+  chrome.contextMenus.removeAll(() => chrome.contextMenus.create({ id: "kp-selection", title: "Küçük Punto ile seçili metni analiz et", contexts: ["selection"] }));
   if (reason === "install" && !isConfigured(await getSettings())) chrome.runtime.openOptionsPage();
+});
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "kp-selection" && tab?.id != null) chrome.tabs.sendMessage(tab.id, { type: "kp:analyzeSelection" }).catch(() => {
+  });
 });

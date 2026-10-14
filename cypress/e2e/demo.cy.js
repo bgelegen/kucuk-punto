@@ -1,6 +1,6 @@
-// Demo video (≤ 90 s): one happy path on a real ToS, one moment where the system honestly says
-// what it does not know, and the hidden-instruction page. Assertions check the guarantees, not
-// specific model outputs (a real model's wording varies run to run).
+// Demo video (≤ 90 s after cutting the model waits): a happy path on a real ToS, the moment where the
+// system honestly says what it does not know, the hidden-instruction page and change tracking.
+// Assertions check the guarantees, not specific model outputs (a real model's wording varies).
 
 const caption = (text) => cy.document({ log: false }).then((doc) => {
   // the caption lives in its own shadow root, so the analysis never reads it
@@ -11,8 +11,8 @@ const caption = (text) => cy.document({ log: false }).then((doc) => {
     doc.documentElement.appendChild(host);
     const root = host.attachShadow({ mode: 'open' });
     const style = doc.createElement('style');
-    style.textContent = `.c{position:fixed;left:24px;bottom:24px;max-width:780px;z-index:2147483646;background:rgba(22,38,61,.94);color:#fff;
-      font:600 19px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;padding:14px 18px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.3)}`;
+    style.textContent = `.c{position:fixed;left:24px;bottom:24px;max-width:760px;z-index:2147483646;background:rgba(19,34,56,.95);color:#fff;
+      font:600 19px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;padding:14px 18px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.3);border-left:5px solid #c9a45c}`;
     const box = doc.createElement('div'); box.className = 'c';
     root.append(style, box);
   }
@@ -36,50 +36,85 @@ const quotesAreInPage = () => cy.document().then((doc) => {
   });
 });
 
+const analyze = () => {
+  cy.get('[data-kp=pill]', { timeout: 15000 }).should('be.visible').click();
+  cy.get('[data-kp=disclaimer]').should('be.visible').and('contain', 'Hukuki tavsiye değildir');
+  cy.get('[data-kp=analyze]').click();
+  cy.get('[data-kp=score]', { timeout: 120000 }).should('be.visible');
+  modelWasUsed();
+};
+
 describe('Küçük Punto', () => {
-  it('gerçek bir sözleşmeyi kanıtla raporlar, emin olmadığını söyler, gizli talimata kanmaz', () => {
+  it('kanıtla raporlar, emin olmadığını söyler, gizli talimata kanmaz, değişikliği yakalar', () => {
     // 1 — happy path on a real terms page
     cy.visit('/netflix-tos.html');
-    caption('Gerçek bir sözleşme açıldı: Netflix Kullanım Koşulları (Open Terms Archive)');
-    cy.get('[data-kp=pill]', { timeout: 15000 }).should('be.visible').and('contain', 'algılandı');
-    pause(1500);
-    cy.get('[data-kp=pill]').click();
-    cy.get('[data-kp=disclaimer]').should('be.visible').and('contain', 'Hukuki tavsiye değildir');
-    cy.get('[data-kp=analyze]').click();
-    caption('Yalnızca görünür metin modele gider. Yanıt JSON şemasından ve alıntı kontrolünden geçer.');
-    cy.get('[data-kp=score]', { timeout: 120000 }).should('be.visible');
-    modelWasUsed();
-    caption('Skoru model değil yazılım hesaplar. Her riskli maddenin yanında orijinal alıntısı var.');
+    caption('Gerçek bir sözleşme: Netflix Kullanım Koşulları. Küçük Punto sayfanın bir sözleşme olduğunu algıladı.');
+    cy.get('[data-kp=pill]', { timeout: 15000 }).should('contain', 'algılandı');
+    pause(1800);
+    caption('Yalnızca ekranda görünen metin, kullanıcının kendi anahtarıyla modele gider.');
+    analyze();
+    caption('Skoru model değil yazılım hesaplar. Risk haritası 14 risk türünü tek bakışta gösterir.');
     cy.get('[data-kp=finding]').should('have.length.at.least', 1);
     quotesAreInPage();
-    pause(2500);
-    cy.get('[data-kp=finding]').first().find('[data-kp=show-in-page]').click();
-    caption('"Metinde göster": alıntı sayfada birebir bulunup işaretlenir.');
+    cy.get('[data-kp=map-cell]').should('have.length', 14);
+    pause(2200);
+    cy.get('[data-kp=risk-map]').scrollIntoView({ duration: 300 });
+    pause(1200);
+
+    // risk map → finding card → "Haklarınız" (static Turkish law references, not model output)
+    cy.get('[data-kp=map-cell]').filter('[data-state=high],[data-state=medium],[data-state=low]').first().then(($c) => {
+      const cat = $c.attr('data-category');
+      cy.wrap($c).click();
+      caption('Her bulgunun yanında sözleşmeden birebir alıntı var; alıntısı sayfada bulunmayan iddia gösterilmez.');
+      pause(2200);
+      cy.get(`[data-kp=finding][data-category=${cat}]`).first().as('card');
+      cy.get('@card').find('[data-kp=guidance-toggle]').click();
+      cy.get('@card').find('[data-kp=guidance]').should('be.visible')
+        .find('a').should('have.attr', 'href').and('match', /^https:\/\/www\.mevzuat\.gov\.tr\//);
+      cy.get('@card').find('[data-kp=guidance]').scrollIntoView({ duration: 300 });
+      caption('"Haklarınız": ne yapabileceğiniz ve ilgili mevzuat (TKHK, KVKK, TBK). Bilgi amaçlıdır, hukuki tavsiye değildir.');
+      pause(3200);
+      cy.get('@card').find('[data-kp=show-in-page]').click();
+    });
+    caption('"Metinde göster": alıntı sayfada bulunup işaretlenir.');
     cy.window().its('CSS.highlights').invoke('get', 'kp-quote').its('size').should('eq', 1);
-    pause(2500);
+    pause(2200);
 
     // 2 — the honest-uncertainty moment
-    cy.get('[data-kp=uncertain]').scrollIntoView({ duration: 400 }).should('be.visible');
+    cy.get('[data-kp=uncertain]').scrollIntoView({ duration: 300 }).should('be.visible');
     cy.get('[data-kp=uncertain-item][data-kind=external_reference]').should('exist');
     caption('Emin olmadığı yerde karar vermez: okumadığı belgeyi ve skora katmadığı maddeleri açıkça söyler.');
     pause(4000);
 
+    // offline report file
+    const day = new Date().toISOString().slice(0, 10);
+    const host = new URL(Cypress.config('baseUrl')).host.replace(/[^a-z0-9.-]+/gi, '-');
+    cy.get('[data-kp=export]').click().should('contain', 'İndirildi');
+    cy.readFile(`cypress/downloads/kucuk-punto-${host}-${day}.html`).should('contain', 'Hukuki tavsiye değildir').and('not.contain', '<script');
+    caption('Rapor tek tıkla çevrimdışı bir HTML dosyası olarak indirilir (betik yok, dış bağlantı yok).');
+    pause(2400);
+
     // 3 — hidden instructions
     cy.visit('/streambox-abonelik.html');
-    caption('Bu sayfaya 9 gizli talimat kondu: beyaz yazı, 1 px yazı, ekran dışı metin, "skoru 0 ver"...');
-    pause(1500);
-    cy.get('[data-kp=pill]').click();
-    cy.get('[data-kp=analyze]').click();
-    cy.get('[data-kp=score]', { timeout: 120000 }).should('be.visible');
-    modelWasUsed();
+    caption('Kurgusal bir abonelik sayfası: içine 9 gizli talimat kondu (beyaz yazı, 1 px yazı, "skoru 0 ver"...).');
+    pause(1800);
+    analyze();
     cy.get('[data-kp=security]').should('be.visible').and('contain', 'gizli metin');
-    caption('Gizli metin modele hiç gitmedi; görünür talimat cümlesi model görmeden çıkarıldı. Skor düşmedi.');
     cy.get('[data-kp=score]').invoke('attr', 'data-band').should('not.eq', 'low');
-    pause(3500);
-    cy.get('[data-kp=uncertain-item][data-kind=hidden_content]').scrollIntoView({ duration: 400 }).should('be.visible');
-    caption('Kapalı "Kampanya" bölümünü okumadığını da söyler: görmediğiniz metin analize alınmaz.');
+    caption('Gizli metin modele hiç gitmedi; görünür talimat cümlesi model görmeden çıkarıldı. Skor düşmedi.');
     quotesAreInPage();
+    cy.get('[data-kp=changes]').should('exist');
     pause(3500);
+
+    // 4 — change tracking: the same contract (same canonical URL), updated
+    cy.visit('/streambox-abonelik-v2.html');
+    caption('Aynı sözleşme bir ay sonra güncellendi. Kullanıcı yine analiz ediyor.');
+    pause(1500);
+    analyze();
+    cy.get('[data-kp=changes]').should('have.attr', 'data-status', 'changed').scrollIntoView({ duration: 300 });
+    cy.get('[data-kp=change-added], [data-kp=change-check]').should('have.length.at.least', 1);
+    caption('Neyin değiştiğini metnin parmak izinden bulur: yeni riskler ve kalkan maddeler. Metnin kendisi saklanmaz.');
+    pause(4500);
     caption('Küçük Punto · hukuki tavsiye değildir · github.com/bgelegen/kucuk-punto');
     pause(1500);
   });

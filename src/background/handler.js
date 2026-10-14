@@ -6,6 +6,8 @@
 
 import { analyze } from '../core/analyze.js';
 import { makeLLM, PRESETS } from '../core/llm.js';
+import { fingerprint, documentKey, makeSnapshot, compareWithPrevious } from '../core/history.js';
+import { norm } from '../core/normalize.js';
 
 export const DEFAULT_SETTINGS = { provider: 'gemini', apiKey: '', model: '', baseUrl: '', autoAnalyze: false };
 
@@ -44,14 +46,18 @@ export function sanitizePayload(p) {
     .map(x => ({ text: x.text.slice(0, L.hiddenChars), reason: String(x.reason || 'unknown').slice(0, 40) }));
   const m = p.meta && typeof p.meta === 'object' ? p.meta : {};
   const str = (v, n) => (typeof v === 'string' ? v : '').slice(0, n);
-  const meta = { title: str(m.title, 300), url: str(m.url, 2000), host: str(m.host, 300), lang: str(m.lang, 20) };
+  const meta = { title: str(m.title, 300), url: str(m.url, 2000), canonical: str(m.canonical, 2000), host: str(m.host, 300), lang: str(m.lang, 20), selection: m.selection === true };
   return { blocks, hidden, meta, rulesOnly: p.rulesOnly === true };
 }
 
 /**
  * @returns {Promise<{ok:true, report:object} | {ok:false, error:{code:string, message:string}}>}
  */
-export async function handleAnalyze(rawPayload, { settings = DEFAULT_SETTINGS, fetchImpl = globalThis.fetch, randomBytes, onProgress, llmOverride = null, timeoutMs, retry } = {}) {
+/**
+ * @param history optional store {get(key): Promise<snapshot|null>, set(key, snapshot): Promise<void>}
+ *                used for "did this contract change since last time?"
+ */
+export async function handleAnalyze(rawPayload, { settings = DEFAULT_SETTINGS, fetchImpl = globalThis.fetch, randomBytes, onProgress, llmOverride = null, timeoutMs, retry, history = null } = {}) {
   // llmOverride: {llm, provider, model} — tests, ablation and the Cypress harness
   let payload;
   try { payload = sanitizePayload(rawPayload); }
@@ -74,5 +80,18 @@ export async function handleAnalyze(rawPayload, { settings = DEFAULT_SETTINGS, f
     ...payload, llm,
     options: { provider: llm ? cfg.provider : null, model: llm ? cfg.model : null, randomBytes, onProgress }
   });
+  report.changes = null;
+  if (history && !payload.meta.selection) {
+    try {
+      const key = documentKey(payload.meta);
+      const fp = fingerprint(norm(payload.blocks.map(b => b.text).join('\n')));
+      const prev = await history.get(key);
+      const engine = report.engine.mode + (report.engine.error ? ':error' : '');
+      report.changes = compareWithPrevious(prev, report, fp, report.clauseIndex);
+      // the diff is decided by the text, so it stays valid across engines; we only say so in the UI
+      if (report.changes.status === 'changed' && prev && prev.engine !== engine) report.changes.engine_changed = true;
+      await history.set(key, { ...makeSnapshot(report, fp, report.clauseIndex), engine, url: payload.meta.url });
+    } catch { report.changes = null; }   // history is a convenience; never fail an analysis because of it
+  }
   return { ok: true, report };
 }

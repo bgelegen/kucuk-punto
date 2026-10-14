@@ -6,9 +6,26 @@ Bir sözleşme sayfası açtığınızda eklenti sayfayı tanır. "Analiz et"e b
 
 > ⚖️ **Hukuki tavsiye değildir.** Küçük Punto otomatik bir okuma yardımıdır; hata yapabilir ve sözleşmenin yerine geçmez. Bu uyarı eklentinin her ekranında görünür.
 
-![Netflix Kullanım Koşulları raporu](docs/screenshots/netflix-report.png)
+| Rapor ve risk haritası | Sözleşme değişince | Haklarınız ve mevzuat |
+|---|---|---|
+| ![Netflix raporu](docs/screenshots/netflix-report.png) | ![Değişiklik takibi](docs/screenshots/streambox-changes.png) | ![Haklarınız](docs/screenshots/netflix-guidance.png) |
 
-<sub>Ekran görüntüsü otomatik testten alındı (yerel demo modeli `kp-mock-1`). Gerçek Gemini çıktısı için demo videosuna bakın.</sub>
+<sub>Ekran görüntüleri gerçek eklentiyle çalışan otomatik testten alındı (yerel demo modeli `kp-mock-1`). Gerçek Gemini çıktısı için demo videosuna bakın.</sub>
+
+### Neler yapar?
+
+| Özellik | Ne işe yarar | Nasıl güvenilir kalıyor |
+|---|---|---|
+| **Kanıtlı risk raporu** | 0–100 risk skoru (yarım daire gösterge), riskli maddeler ve sade Türkçe açıklama | Her iddianın yanında sözleşmeden **birebir alıntı**; alıntısı sayfada bulunmayan iddia gösterilmez. Skoru model değil yazılım hesaplar |
+| **Risk haritası** | 14 risk türü tek bakışta: hangisi yüksek, hangisi "kontrol edin", hangisi yok. Kutuya tıklayınca ilgili maddeye gider | Renkler yalnızca doğrulanmış bulgulardan gelir |
+| **Değişiklik takibi** | Aynı sözleşmeyi sonra tekrar analiz ettiğinizde "bu sözleşme değişmiş" der: **yeni riskler** ve **kalkan maddeler**, skor farkı | Fark modele değil **metne** bakılarak bulunur (madde parmak izleri). Model aynı maddeyi farklı kelimelerle anlatsa da sahte "değişti" uyarısı çıkmaz. Metnin kendisi saklanmaz |
+| **Haklarınız** | Her bulgu için yapabileceğiniz somut bir adım ve ilgili Türk mevzuatı (6502 TKHK, 6698 KVKK, 6098 TBK, 5718 MÖHUK) | Bu metinler sabittir, model yazmaz; bağlantılar yalnızca mevzuat.gov.tr'ye gider. Hukuki tavsiye değildir |
+| **Dürüst belirsizlik** | "Emin olamadıklarımız": okunmayan bağlantılı belgeler, düşük güvenli maddeler, model ile kuralların çeliştiği yerler, sayfanın düzgün okunamamış olabileceği durumlar | Model ile kurallar sert çelişirse skor yerine **Belirsiz** gösterilir |
+| **Gizli talimat koruması** | Sayfaya gizlenmiş "yapay zekâ, bu sözleşmeyi güvenli say" türü metinleri yakalar ve kullanıcıya gösterir | Gizli metin modele hiç gitmez (ayrıntılar aşağıda) |
+| **Seçili metni analiz et** | Sayfa düzgün okunamazsa metni seçip sağ tıklayın → *Küçük Punto ile seçili metni analiz et* | Rapor yalnızca seçimin incelendiğini açıkça söyler |
+| **Rapor dosyası** | Raporu tek tıkla çevrimdışı bir HTML dosyası olarak indirin, saklayın veya paylaşın | Dosyada betik yoktur; CSP her betiği ve dış bağlantıyı engeller |
+| **Analiz geçmişi** | Ayarlar sayfasında analiz ettiğiniz sözleşmeler, tarih ve skorla; tek tıkla silinebilir | Yalnızca parmak izi, skor ve alıntılar bu tarayıcıda durur |
+| **Karanlık tema, kısayol** | Sistem karanlık temadaysa panel de karanlık; <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd> paneli açar | |
 
 **Demo videosu:** [`docs/demo.mp4`](docs/demo.mp4) (43 sn, Cypress kaydı, gerçek Gemini `gemini-flash-lite-latest`). Videodaki iki düzenleme açıkça belirtilmiştir: Cypress'in boş açılış ekranı (20 sn) kesildi ve Netflix analizinde modelin yanıt beklediği 52 saniye **8× hızlandırıldı** (videoda etiketli). Kesilmemiş ham kayıt: [`docs/demo-ham.mp4`](docs/demo-ham.mp4) (108 sn).
 
@@ -18,12 +35,14 @@ Bir sözleşme sayfası açtığınızda eklenti sayfayı tanır. "Analiz et"e b
 
 1. [Kurulum (5 dakika)](#kurulum)
 2. [Mimari ve veri akışı](#mimari-ve-veri-akışı)
-3. [LLM çıktısı neden serbest metin değil?](#llm-çıktısı-neden-serbest-metin-değil)
-4. [Güvenlik ve prompt injection](#güvenlik-ve-prompt-injection)
-5. [page-agent ile ilişkisi](#page-agent-ile-ilişkisi)
-6. [Değerlendirme](#değerlendirme)
-7. [Testler ve demo videosu](#testler-ve-demo-videosu)
-8. [Sınırlılıklar](#sınırlılıklar)
+3. [Değişiklik takibi nasıl çalışır?](#değişiklik-takibi-nasıl-çalışır)
+4. [LLM çıktısı neden serbest metin değil?](#llm-çıktısı-neden-serbest-metin-değil)
+5. [Güvenlik ve prompt injection](#güvenlik-ve-prompt-injection)
+6. [page-agent ile ilişkisi](#page-agent-ile-ilişkisi)
+7. [Değerlendirme](#değerlendirme)
+8. [Testler ve demo videosu](#testler-ve-demo-videosu)
+9. [Mevzuat notları](#mevzuat-notları)
+10. [Sınırlılıklar](#sınırlılıklar)
 
 ---
 
@@ -49,18 +68,24 @@ Chrome'da `chrome://extensions` → sağ üstte **Geliştirici modu** → **Pake
 
 > Claude Pro veya Gemini Advanced gibi sohbet abonelikleri API anahtarı içermez. Gemini için AI Studio anahtarı ayrı ve ücretsizdir.
 
-**3. Kullanın.** Bir kullanım koşulları sayfası açın. Sağ altta "… algılandı · analiz et" kutusu çıkar. Algılanmayan bir sayfada araç çubuğundaki simgeye tıklayın.
+**3. Kullanın.** Bir kullanım koşulları sayfası açın. Sağ altta "… algılandı · analiz et" kutusu çıkar. Algılanmayan bir sayfada araç çubuğundaki simgeye tıklayın ya da <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd>'ye basın.
+
+> **Güncelleme yaptıysanız:** `chrome://extensions` sayfasında Küçük Punto kartındaki yenile (↻) düğmesine basın ve açık sekmeleri yenileyin. Eski içerik betiği sekmelerde yenilenene kadar çalışmaya devam eder.
+>
+> **Kota (429) hatası alırsanız:** ayarlarda *Gelişmiş › Model* alanına `gemini-flash-lite-latest` yazın. Ücretsiz Gemini modellerinin her birinin ayrı ve küçük bir günlük kotası vardır.
 
 ### Windows'ta tek tıkla değerlendirme + demo
 
 `calistir.bat` dosyasına çift tıklayın. Node.js yoksa kurar, paketleri indirir, Gemini anahtarını ekranda göstermeden sorar (`.env`), çalışan bir Gemini modelini seçer (ücretsiz modeller sık sık "aşırı yoğun" 503 veya kota 429 döndürür), sonra değerlendirmeyi, injection testini ve Cypress videosunu sırayla çalıştırır. Yarıda kalırsa tekrar çalıştırın: başarılı model yanıtları kaydedildiği için yalnızca eksikler yeniden sorulur.
+
+Yalnızca demo videosunu yeniden çekmek için `video-cek.bat` (değerlendirmeyi tekrar çalıştırmaz, kotayı harcamaz). Anahtarı değiştirmek için `anahtar-degistir.bat`.
 
 ### Geliştirme
 
 ```bash
 npm install          # esbuild, cypress, @page-agent/page-controller (yalnızca karşılaştırma için)
 npm run build        # src/ → extension/dist/
-npm test             # 27 birim testi
+npm test             # 33 birim testi
 cp .env.example .env # eval ve Cypress için: KP_API_KEY=...
 ```
 
@@ -82,6 +107,7 @@ flowchart LR
   subgraph S["Servis çalışanı · eklenti kökeni"]
     H["handler.js<br/>yük doğrulama, anahtar"]
     A["analyze.js<br/>boru hattı"]
+    HS[("Analiz geçmişi<br/>yalnızca parmak izleri")]
   end
   M[("Model sağlayıcısı<br/>kendi anahtarınız")]
   B["Araç çubuğu rozeti"]
@@ -92,7 +118,9 @@ flowchart LR
   M -- "JSON" --> A
   A -- "rapor" --> U
   A --> B
+  H <-- "önceki sürümle<br/>karşılaştır" --> HS
   U --> HL --> DOM
+  U -- "Rapor indir" --> F["Çevrimdışı HTML<br/>(betik yok, CSP)"]
 ```
 
 **Bir analizin adımları** (`src/core/analyze.js`):
@@ -100,7 +128,7 @@ flowchart LR
 | # | Adım | Dosya | Ne yapar |
 |---|---|---|---|
 | 1 | Tespit | `content/detect.js` | URL, başlık ve hukuk kelimesi yoğunluğu. Tamamen yerel, hiçbir şey gönderilmez |
-| 2 | Yakalama | `content/capture.js` | DOM'u insanın gördüğü gibi okur; gizli metni (CSS, 1 px, saydam, beyaz-üstüne-beyaz, ekran dışı, kırpılmış) **ayırır** |
+| 2 | Yakalama | `content/capture.js` | DOM'u insanın gördüğü gibi okur; gizli metni (CSS, 1 px, saydam, beyaz-üstüne-beyaz, ekran dışı, kırpılmış) **ayırır**. Gerçek sitelerdeki düzenlerle test edildi: koyu arka planlı sayfalar, `font-size:0` sarmalayıcılar, iç kaydırmalı uygulama düzenleri, `content-visibility` |
 | 3 | Parçalama | `core/segment.js` | Metni `c1…cN` numaralı maddelere böler (model bu kimliklere atıf yapar) |
 | 4 | Karantina | `core/injection.js` | Yapay zekâya talimat veren cümleleri model görmeden çıkarır |
 | 5 | Kurallar | `core/baseline.js` | Bağımsız anahtar kelime kuralları (TR + EN): çapraz kontrol ve anahtarsız mod |
@@ -109,7 +137,8 @@ flowchart LR
 | 8 | Şema | `core/schema.js` | Deterministik doğrulama. Hatalıysa **bir** onarım turu, yine hatalıysa etiketli kural sonucu |
 | 9 | Kanıt | `core/verify.js` | Her alıntı metinde birebir aranır. Bulunamayan iddia **reddedilir** ve "kanıtlanamadı" diye listelenir |
 | 10 | Skor | `core/score.js` | Skoru yazılım hesaplar. Model kuralların bulduğundan çok daha az risk bildirirse skor yerine **Belirsiz** gösterilir |
-| 11 | Rapor | `content/panel.js` | Yalnızca `textContent` ile çizilir. Ayrıca "Emin olamadıklarımız" ve "Kanıtlanamayan iddialar" bölümleri vardır |
+| 11 | Değişiklik | `core/history.js` | Metnin ve her maddenin parmak izini önceki analizle karşılaştırır; yeni riskleri ve kalkan maddeleri bulur |
+| 12 | Rapor | `content/panel.js` | Yalnızca `textContent` ile çizilir: gösterge, risk haritası, bulgular, "Haklarınız" (`core/guidance.js`), "Emin olamadıklarımız", "Kanıtlanamayan iddialar". `content/export.js` çevrimdışı HTML dosyasını üretir |
 
 **Skor formülü** (`src/core/score.js`): her kategori için `ağırlık × (en yüksek önem + 0,5 × min(ek bulgu, 2))`, toplam `raw`; `skor = round(100 × (1 − e^(−raw/10)))`. 0–29 düşük, 30–59 orta, 60+ yüksek. Güveni 0,5'in altındaki model bulguları skora girmez, "Emin olamadıklarımız" altında gösterilir.
 
@@ -125,12 +154,25 @@ src/content/          sayfa tarafı: tespit, yakalama, panel, vurgulama, iki ta�
 src/background/       servis çalışanı + paylaşılan istek işleyici
 src/options/          ayarlar sayfası mantığı
 eval/                 korpus, altın standart, eşleştirici, run.js, injection.js → EVAL.md
-site/                 demo/test sayfaları (gerçek Netflix metni, kurgusal StreamBox injection sayfası)
+site/                 demo/test sayfaları (gerçek Netflix metni, kurgusal StreamBox injection sayfası ve güncellenmiş hâli,
+                      test/: gerçek sitelerdeki zor düzenler)
 cypress/              demo videosu senaryosu
 tests/                birim testleri + gerçek eklentiyle uçtan uca test (Playwright)
-scripts/              build, harness sunucusu, sahte model, fikstür yakalama, demo
+scripts/              build, harness sunucusu, sahte model, model seçici, fikstür yakalama, demo
 ```
 </details>
+
+---
+
+## Değişiklik takibi nasıl çalışır?
+
+Şirketler koşullarını sessizce değiştirir ve "kullanmaya devam etmeniz kabul sayılır" der. Küçük Punto aynı sözleşmeyi ikinci kez analiz ettiğinizde neyin değiştiğini gösterir (`src/core/history.js`):
+
+1. **Hangi sözleşme?** Anahtar sayfanın `<link rel="canonical">` adresidir, yoksa `?utm=…` ve `#…` atılmış URL. Aynı sözleşme farklı adreslerden açılsa da eşleşir.
+2. **Ne saklanır?** Tüm metnin ve her maddenin 32 bitlik parmak izi (FNV-1a), skor ve doğrulanmış alıntılar. Sözleşme metninin kendisi saklanmaz; hiçbir yere gönderilmez (`chrome.storage.local`, en fazla 300 sözleşme). Seçili metin analizleri kaydedilmez.
+3. **Fark nasıl bulunur?** Önce tüm metnin parmak izi karşılaştırılır: aynıysa "değişmedi". Değilse madde parmak izleri karşılaştırılır. Bir bulgu, ancak alıntısı **yeni ya da değişmiş bir maddede** ise "YENİ RİSK" olur. Önceki bir bulgu, ancak maddesi artık metinde birebir yoksa "KALKTI" olur. Yeni maddede kuralların bulduğu ama modelin onaylamadığı riskler "YENİ · KONTROL EDİN" olarak ayrı gösterilir.
+
+Bu tasarımın nedeni: modelin çıktısı her çalıştırmada biraz farklıdır. Fark bulguların metninden çıkarılsaydı, hiçbir şey değişmemişken model aynı maddeyi başka kelimelerle alıntıladığında sahte bir "değişti" uyarısı çıkardı. Madde parmak izleri deterministiktir; testi `tests/features.test.js` içindedir.
 
 ---
 
@@ -171,7 +213,7 @@ Ayrıntılı tehdit modeli: [SECURITY.md](SECURITY.md). Ölçümler: [EVAL.md �
 | K5 Kanıt | Alıntısı metinde olmayan iddia reddedilir; karantinadaki cümleden yapılan alıntı da | `core/verify.js` |
 | K6 Skor | Skor yazılımla hesaplanır | `core/score.js` |
 | K7 Çapraz kontrol | Model kurallarla sert biçimde çelişirse skor yerine **Belirsiz** gösterilir | `core/analyze.js` |
-| K8 Gösterim | Yalnızca `textContent`; derlemede `innerHTML` kontrolü yapılır | `content/panel.js`, `scripts/build.js` |
+| K8 Gösterim | Yalnızca `textContent`; derlemede `innerHTML` kontrolü yapılır. İndirilen rapor dosyası da DOM ile kurulur ve `default-src 'none'` CSP'si taşır | `content/panel.js`, `content/export.js`, `scripts/build.js` |
 | K9 Yetki | Modelin aracı yok (tıklama, yazma, kod çalıştırma yok). Eklentinin `tabs`/`scripting` izni yok | `core/llm.js`, `manifest.json` |
 | K10 Rozet | Skor, sayfanın erişemediği araç çubuğu rozetinde de görünür | `background/sw.js` |
 
@@ -226,8 +268,8 @@ Modelin 36 iddiasından 35'inin alıntısı metinde birebir bulundu; reddedilen 
 
 | Komut | Ne test eder |
 |---|---|
-| `npm test` | 27 birim testi: normalizasyon, parçalama, alıntı doğrulama (paragraf bölünmesini aşan alıntı dâhil), şema, skor, karantina (TR/EN, yanlış pozitif), onarım turu, çelişki durumu, nonce, yük sınırları, sağlayıcı hatalarında yeniden deneme |
-| `npm run test:e2e` | **Gerçek paketlenmemiş eklenti** Chromium'da (Playwright): ayarlar sayfası, tespit kutusu, rapor, her alıntının sayfada birebir bulunması, rozet, "Metinde göster", injection sayfası, XSS denemesi, anahtarsız mod, sağlayıcı hatası. Kurulum: `npm i -D playwright && npx playwright install chromium` |
+| `npm test` | 33 birim testi: normalizasyon, parçalama, alıntı doğrulama (paragraf bölünmesini aşan alıntı dâhil), şema, skor, karantina (TR/EN, yanlış pozitif), onarım turu, çelişki durumu, nonce, yük sınırları, sağlayıcı hatalarında yeniden deneme, değişiklik takibi (ilk / aynı / değişti, yeniden ifade edilen alıntının sahte değişiklik sayılmaması, metnin saklanmaması), 14 kategorinin hepsi için rehber ve ikon |
+| `npm run test:e2e` | **Gerçek paketlenmemiş eklenti** Chromium'da (Playwright), 14 adım: ayarlar sayfası, tespit kutusu, rapor, her alıntının sayfada birebir bulunması, rozet, "Metinde göster", risk haritası ve mevzuat bağlantıları, rapor dosyası (betik yok, CSP), injection sayfası, **değişiklik takibi** (v1 → v2), analiz geçmişi ve silinmesi, sağ tık ile seçili metin analizi, **gerçek site düzenleri** (koyu arka plan, `font-size:0`, iç kaydırma, `content-visibility`), XSS denemesi, anahtarsız mod, sağlayıcı hatası. Kurulum: `npm i -D playwright && npx playwright install chromium` |
 | `npm run eval:injection` | Okuyucu karşılaştırması, ablasyon ve hedefli saldırılar |
 | `npm run demo` | Cypress demo videosu → `docs/demo.mp4` (≤ 90 sn kontrolü) |
 
@@ -246,9 +288,29 @@ ffmpeg -i docs/demo-ham.mp4 -filter_complex "[0:v]trim=20.3:23.0,setpts=PTS-STAR
 
 Video senaryosu (`cypress/e2e/demo.cy.js`):
 
-1. **Mutlu yol:** Gerçek Netflix koşulları açılır. Tespit kutusu → analiz → skor → alıntılı bulgular → "Metinde göster". Testin kendisi her alıntının sayfada birebir geçtiğini doğrular.
+1. **Mutlu yol:** Gerçek Netflix koşulları açılır. Tespit kutusu → analiz → skor ve risk haritası → haritadan bir bulguya geçiş → "Haklarınız" (mevzuat bağlantıları) → "Metinde göster". Testin kendisi her alıntının sayfada birebir geçtiğini doğrular.
 2. **Dürüst belirsizlik:** "Emin olamadıklarımız" bölümü. Atıf yapılan ama okunmayan Gizlilik Bildirimi, skora katılmayan düşük güvenli maddeler ve model ile kuralların ayrıştığı yerler burada görünür.
-3. **Gizli talimat:** StreamBox sayfası. Güvenlik kutusu, değişmeyen skor ve okunmayan kapalı bölüm uyarısı.
+3. **Rapor dosyası:** tek tıkla indirilir; test, dosyada betik olmadığını doğrular.
+4. **Gizli talimat:** StreamBox sayfası. Güvenlik kutusu ve düşmeyen skor.
+5. **Değişiklik takibi:** aynı sözleşmenin güncellenmiş hâli (`site/streambox-abonelik-v2.html`, aynı canonical adres; 7 gün → 30 gün, iade koşulu, yeni yapay zekâ eğitimi maddesi). Panel "Bu sözleşme değişmiş" der ve yeni riskleri listeler.
+
+---
+
+## Mevzuat notları
+
+"Haklarınız" bölümündeki metinler `src/core/guidance.js` içinde sabittir; model yazmaz, sayfaya göre değişmez. Atıflar 14 Ekim 2026'da mevzuat.gov.tr üzerinden kontrol edildi:
+
+| Konu | Atıf |
+|---|---|
+| Abonelik sözleşmeleri, fesih | 6502 sayılı Tüketicinin Korunması Hakkında Kanun (TKHK) m.52 |
+| Haksız şartlar | TKHK m.5 |
+| Tüketici hakem heyeti, arabuluculuk | TKHK m.68, m.73/A |
+| Cayma hakkı | Mesafeli Sözleşmeler Yönetmeliği |
+| Ağır kusurdan sorumsuzluk anlaşması | 6098 sayılı Türk Borçlar Kanunu m.115 |
+| Yabancı hukuk seçimi (tüketici sözleşmeleri) | 5718 sayılı MÖHUK m.26 |
+| Kişisel veriler: işleme şartları, silme, aktarım, yurt dışına aktarım, ilgili kişinin hakları | 6698 sayılı KVKK m.5, m.7, m.8, m.9, m.11 |
+
+Kasıtlı olarak yapılmayanlar: bir maddenin Türk hukukuna göre **geçersiz** olup olmadığı söylenmez; süre ve tutar verilmez (mevzuat değişebilir); "İçeriğinize geniş lisans" için doğrudan bir tüketici hükmü olmadığından mevzuat bağlantısı gösterilmez. Her rehber kutusunun altında "Bilgi amaçlıdır, hukuki tavsiye değildir" notu vardır.
 
 ---
 
@@ -257,7 +319,8 @@ Video senaryosu (`cypress/e2e/demo.cy.js`):
 - **Hukuki tavsiye değildir.** Kategoriler tüketici bakışıyla seçilmiş genel risklerdir; Türk tüketici mevzuatına göre geçerlilik değerlendirmesi yapılmaz.
 - Görünür metnin tamamı (en fazla 120.000 karakter) seçtiğiniz sağlayıcıya gönderilir. Kişisel bilgi içeren sayfalarda (ör. hesabınızdaki sözleşme) bunu bilerek kullanın.
 - API anahtarı `chrome.storage.local` içinde şifresiz durur (senkronize edilmez, sayfalar erişemez).
-- Okunmayanlar: PDF'ler, iframe içindeki metin, Shadow DOM içindeki metin, kapalı akordeon bölümleri. Sonuncusu raporda açıkça söylenir.
+- Okunmayanlar: PDF'ler, iframe içindeki metin, Shadow DOM içindeki metin, kapalı akordeon bölümleri. Sonuncusu raporda açıkça söylenir. Sayfanın büyük kısmı "görünmez" sayıldıysa rapor bunu söyler ve sağ tık ile seçili metin analizini önerir.
+- Değişiklik takibi yalnızca bu tarayıcıdaki önceki analizle karşılaştırır; ilk analizden önceki değişiklikleri bilemez. Parmak izi 32 bittir (kriptografik değil): iki farklı maddenin aynı izi alma olasılığı çok düşüktür ama sıfır değildir.
 - Karantina filtresi düzenli ifadelere dayanır. Yaratıcı biçimde yazılmış görünür bir talimat filtreden geçebilir; bu durumda çapraz kontrol devreye girer ama her durumu yakalamaz (EVAL.md, bölüm 2).
 - Panel sayfanın içinde çizilir. Kötü niyetli bir sayfa üstüne sahte bir panel çizebilir; araç çubuğu rozeti bu yüzden vardır.
 - Değerlendirme küçük ve İngilizce ağırlıklıdır; altın standart tek kişi tarafından hazırlandı (EVAL.md).

@@ -34,14 +34,17 @@ function lum({ r, g, b }) {
 }
 function contrast(a, b) { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
 
+// The background a text actually sits on. Only an explicit, opaque background on an ancestor counts.
+// No such ancestor means "unknown" (many dark sites paint the background on a separate fixed layer),
+// and unknown is never treated as hidden: a false "hidden" silently drops real terms from the analysis.
 function effectiveBackground(el, win) {
   for (let a = el; a; a = a.parentElement) {
     const s = win.getComputedStyle(a);
-    if (s.backgroundImage && s.backgroundImage !== 'none') return null; // unknown: do not guess
+    if (s.backgroundImage && s.backgroundImage !== 'none') return null;
     const c = parseColor(s.backgroundColor);
     if (c && c.a > 0.5) return c;
   }
-  return { r: 255, g: 255, b: 255, a: 1 };
+  return null;
 }
 
 function elementHiddenReason(el, win, doc) {
@@ -54,6 +57,7 @@ function elementHiddenReason(el, win, doc) {
     }
   }
   const cs = win.getComputedStyle(el);
+  // the element's own computed size is what is rendered (a "font-size: 0" wrapper is a common layout trick)
   if (parseFloat(cs.fontSize) < 5) return 'tiny-font';
   const color = parseColor(cs.color);
   if (color && color.a < 0.15) return 'transparent-text';
@@ -65,13 +69,15 @@ function elementHiddenReason(el, win, doc) {
       const r = a.getBoundingClientRect();
       if (r.width <= 2 || r.height <= 2) return 'clipped';
     }
-    if (parseFloat(s.fontSize) < 5) return 'tiny-font';
   }
   const bg = effectiveBackground(el, win);
   if (color && bg && contrast(color, bg) < 1.4) return 'low-contrast';
   return null;
 }
 
+// "Off-screen" means pushed out of the page on purpose (left:-9999px, text-indent:-9999px, top:-9999px).
+// Text further down the page, or below the fold of an inner scrolling box, is NOT hidden: the user can
+// scroll to it. So only the left/top edges count, and vertical only for absolutely/fixed positioned boxes.
 function nodeGeometryReason(node, doc, win) {
   const range = doc.createRange();
   range.selectNodeContents(node);
@@ -79,10 +85,13 @@ function nodeGeometryReason(node, doc, win) {
   if (!rects.length) return 'zero-size';
   const r = range.getBoundingClientRect();
   if (r.width < 1 || r.height < 1) return 'zero-size';
-  const de = doc.documentElement;
-  const docW = Math.max(de.scrollWidth, win.innerWidth), docH = Math.max(de.scrollHeight, win.innerHeight);
-  const left = r.left + win.scrollX, top = r.top + win.scrollY;
-  if (left + r.width <= 0 || top + r.height <= 0 || left >= docW || top >= docH) return 'offscreen';
+  if (r.right + win.scrollX <= 0) return 'offscreen';
+  if (r.bottom + win.scrollY <= -200) {
+    for (let a = node.parentElement, i = 0; a && i < 6; a = a.parentElement, i++) {
+      const pos = win.getComputedStyle(a).position;
+      if (pos === 'absolute' || pos === 'fixed') return 'offscreen';
+    }
+  }
   return null;
 }
 
@@ -138,7 +147,7 @@ export function capturePage({ doc = document, win = window, maxNodes = 60000 } =
   flush(); flushHidden();
   const loc = win.location;
   return {
-    meta: { title: doc.title || '', url: loc.href, host: loc.host, lang: doc.documentElement.lang || '' },
+    meta: { title: doc.title || '', url: loc.href, canonical: doc.querySelector('link[rel="canonical"]')?.href || '', host: loc.host, lang: doc.documentElement.lang || '' },
     blocks, hidden,
     stats: { textNodes: nodes, visibleChars, hiddenChars, truncatedNodes: nodes > maxNodes }
   };

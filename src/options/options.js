@@ -5,7 +5,7 @@ import { textToBlocks } from '../core/segment.js';
 
 const $ = id => document.getElementById(id);
 const HELP = {
-  gemini: ['Ücretsiz anahtar: ', 'https://aistudio.google.com/apikey', ' adresinde “Create API key”. Varsayılan model gemini-flash-latest.'],
+  gemini: ['Ücretsiz anahtar: ', 'https://aistudio.google.com/apikey', ' adresinde “Create API key”. Varsayılan model gemini-flash-latest. Kota (429) hatası alırsanız Gelişmiş › Model alanına gemini-flash-lite-latest yazın.'],
   openai: ['Anahtar: ', 'https://platform.openai.com/api-keys', ' (ücretli).'],
   anthropic: ['Anahtar: ', 'https://console.anthropic.com/settings/keys', ' (ücretli; Claude Pro aboneliği API anahtarı içermez).'],
   groq: ['Ücretsiz katman: ', 'https://console.groq.com/keys', ''],
@@ -104,6 +104,39 @@ $('reveal').addEventListener('click', () => {
   k.type = show ? 'text' : 'password'; $('reveal').textContent = show ? 'Gizle' : 'Göster';
 });
 $('provider').addEventListener('change', renderHelp);
+
+// ---- analysis history (fingerprints only; written by the service worker)
+const HISTORY_KEY = 'kp_history';
+const BAND = { low: 'Düşük', medium: 'Orta', high: 'Yüksek' };
+async function renderHistory() {
+  const { [HISTORY_KEY]: h = {} } = await chrome.storage.local.get(HISTORY_KEY);
+  const rows = Object.entries(h).sort((a, b) => String(b[1].date).localeCompare(String(a[1].date)));
+  const box = $('history');
+  box.replaceChildren();
+  if (!rows.length) { const p = document.createElement('p'); p.className = 'help'; p.textContent = 'Henüz analiz yok.'; box.append(p); return; }
+  const table = document.createElement('table');
+  const head = table.createTHead().insertRow();
+  for (const t of ['Sözleşme', 'Tarih', 'Skor', 'Bulgu']) { const th = document.createElement('th'); th.textContent = t; head.append(th); }
+  const tb = table.createTBody();
+  for (const [key, s] of rows.slice(0, 50)) {
+    const tr = tb.insertRow();
+    tr.setAttribute('data-kp', 'history-row');
+    const c1 = tr.insertCell();
+    const name = document.createElement('div'); name.className = 'name'; name.textContent = s.title || s.host || key;
+    const sub = document.createElement('div'); sub.className = 'help'; sub.textContent = s.host || key;
+    c1.append(name, sub);
+    tr.insertCell().textContent = (() => { try { return new Date(s.date).toLocaleString('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return ''; } })();
+    const c3 = tr.insertCell();
+    const b = document.createElement('span'); b.className = 'band ' + (s.score_status === 'conflict' ? 'uncertain' : s.band);
+    b.textContent = s.score_status === 'conflict' ? 'Belirsiz' : `${s.score} · ${BAND[s.band] || ''}`;
+    c3.append(b);
+    tr.insertCell().textContent = String((s.findings || []).length);
+  }
+  box.append(table);
+}
+$('clearHistory').addEventListener('click', async () => { await chrome.storage.local.remove(HISTORY_KEY); renderHistory(); });
+chrome.storage.onChanged.addListener((ch, area) => { if (area === 'local' && ch[HISTORY_KEY]) renderHistory(); });
+renderHistory();
 
 fill();
 load();

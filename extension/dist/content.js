@@ -27,7 +27,7 @@
       const c = parseColor(s.backgroundColor);
       if (c && c.a > 0.5) return c;
     }
-    return { r: 255, g: 255, b: 255, a: 1 };
+    return null;
   }
   function elementHiddenReason(el, win, doc) {
     if (typeof el.checkVisibility === "function") {
@@ -50,7 +50,6 @@
         const r = a.getBoundingClientRect();
         if (r.width <= 2 || r.height <= 2) return "clipped";
       }
-      if (parseFloat(s.fontSize) < 5) return "tiny-font";
     }
     const bg = effectiveBackground(el, win);
     if (color && bg && contrast(color, bg) < 1.4) return "low-contrast";
@@ -63,10 +62,13 @@
     if (!rects.length) return "zero-size";
     const r = range.getBoundingClientRect();
     if (r.width < 1 || r.height < 1) return "zero-size";
-    const de = doc.documentElement;
-    const docW = Math.max(de.scrollWidth, win.innerWidth), docH = Math.max(de.scrollHeight, win.innerHeight);
-    const left = r.left + win.scrollX, top = r.top + win.scrollY;
-    if (left + r.width <= 0 || top + r.height <= 0 || left >= docW || top >= docH) return "offscreen";
+    if (r.right + win.scrollX <= 0) return "offscreen";
+    if (r.bottom + win.scrollY <= -200) {
+      for (let a = node.parentElement, i = 0; a && i < 6; a = a.parentElement, i++) {
+        const pos = win.getComputedStyle(a).position;
+        if (pos === "absolute" || pos === "fixed") return "offscreen";
+      }
+    }
     return null;
   }
   function blockAncestor(el, win, cache) {
@@ -147,7 +149,7 @@
     flushHidden();
     const loc = win.location;
     return {
-      meta: { title: doc.title || "", url: loc.href, host: loc.host, lang: doc.documentElement.lang || "" },
+      meta: { title: doc.title || "", url: loc.href, canonical: doc.querySelector('link[rel="canonical"]')?.href || "", host: loc.host, lang: doc.documentElement.lang || "" },
       blocks,
       hidden,
       stats: { textNodes: nodes, visibleChars, hiddenChars, truncatedNodes: nodes > maxNodes }
@@ -360,6 +362,285 @@
   var SEVERITY_IDS = Object.keys(SEVERITY);
   var SEVERITY_TR = { high: "Yüksek", medium: "Orta", low: "Düşük" };
 
+  // src/core/guidance.js
+  var MEVZUAT = (no, tertip = 5) => `https://www.mevzuat.gov.tr/mevzuat?MevzuatNo=${no}&MevzuatTur=1&MevzuatTertip=${tertip}`;
+  var TKHK = MEVZUAT(6502);
+  var KVKK = MEVZUAT(6698);
+  var TBK = MEVZUAT(6098);
+  var MOHUK = MEVZUAT(5718);
+  var GUIDANCE = {
+    auto_renewal: {
+      tip_tr: "Yenileme tarihini takviminize ekleyin ve iptal yolunu (hesap ayarları, e-posta) şimdiden not edin.",
+      laws: [{ label: "6502 sayılı TKHK m.52 – abonelik sözleşmeleri ve fesih", url: TKHK }]
+    },
+    cancellation_refund: {
+      tip_tr: "Ödeme yapmadan önce iade ve iptal koşullarının ekran görüntüsünü saklayın.",
+      laws: [{ label: "Mesafeli Sözleşmeler Yönetmeliği – cayma hakkı ve istisnaları", url: TKHK }]
+    },
+    price_change: {
+      tip_tr: "Fiyat değişikliği e-postalarını takip edin; zam olduğunda aboneliği sonlandırıp sonlandıramayacağınıza bakın.",
+      laws: [{ label: "6502 sayılı TKHK m.5 – haksız şartlar", url: TKHK }]
+    },
+    unilateral_change: {
+      tip_tr: '"Koşullarımız güncellendi" bildirimlerini atlamayın. Küçük Punto, aynı sayfayı tekrar analiz ettiğinizde neyin değiştiğini gösterir.',
+      laws: [{ label: "6502 sayılı TKHK m.5 – haksız şartlar", url: TKHK }]
+    },
+    account_termination: {
+      tip_tr: "Hesapta tuttuğunuz önemli verileri (fotoğraf, belge, satın alımlar) düzenli olarak dışa aktarın.",
+      laws: [{ label: "6502 sayılı TKHK m.5 – haksız şartlar", url: TKHK }]
+    },
+    data_sharing: {
+      tip_tr: "Hesap ayarlarından reklam ve kişiselleştirme izinlerini kapatın; aydınlatma metninde verinin kimlere aktarıldığına bakın.",
+      laws: [{ label: "KVKK m.8 – aktarım, m.9 – yurt dışına aktarım", url: KVKK }, { label: "KVKK m.11 – ilgili kişinin hakları", url: KVKK }]
+    },
+    data_retention: {
+      tip_tr: "Hesabınızı kapatırken verilerinizin silinmesini ayrıca ve yazılı olarak talep edin.",
+      laws: [{ label: "KVKK m.7 – silme, yok etme, anonim hâle getirme", url: KVKK }, { label: "KVKK m.11 – ilgili kişinin hakları", url: KVKK }]
+    },
+    tracking_profiling: {
+      tip_tr: "Çerez tercihlerinden zorunlu olmayan çerezleri reddedin; uygulamalarda reklam kimliğini sıfırlayın.",
+      laws: [{ label: "KVKK m.5 – işleme şartları ve açık rıza", url: KVKK }]
+    },
+    content_license: {
+      tip_tr: "Başkasının kullanmasını istemediğiniz içerikleri yüklemeyin; lisansın hesabı silince sona erip ermediğine bakın.",
+      laws: []
+    },
+    ai_training: {
+      tip_tr: 'Ayarlarda "verilerim yapay zekâ eğitiminde kullanılmasın" gibi bir seçenek olup olmadığını kontrol edin.',
+      laws: [{ label: "KVKK m.5 – işleme şartları, m.11 – itiraz hakkı", url: KVKK }]
+    },
+    liability_limit: {
+      tip_tr: "Önemli işleriniz için bu hizmete tek başına güvenmeyin; yedek bir yol tutun.",
+      laws: [{ label: "TBK m.115 – ağır kusurdan sorumsuzluk anlaşması kesin hükümsüzdür", url: TBK }, { label: "6502 sayılı TKHK m.5 – haksız şartlar", url: TKHK }]
+    },
+    indemnification: {
+      tip_tr: "Hizmeti kullanırken başkalarının haklarını (telif, marka) ihlal edebilecek içeriklerden kaçının.",
+      laws: [{ label: "6502 sayılı TKHK m.5 – haksız şartlar", url: TKHK }]
+    },
+    dispute_waiver: {
+      tip_tr: "Türkiye'de tüketici uyuşmazlıklarında, tutara göre tüketici hakem heyetine veya arabuluculuğun ardından tüketici mahkemesine başvurma yolu vardır.",
+      laws: [{ label: "6502 sayılı TKHK m.68 – tüketici hakem heyetleri", url: TKHK }, { label: "6502 sayılı TKHK m.73/A – arabuluculuk", url: TKHK }]
+    },
+    governing_law: {
+      tip_tr: "Yabancı hukuk seçilmiş olsa bile tüketici sözleşmelerinde, belirli koşullarda yaşadığınız ülkenin koruyucu kuralları saklı kalabilir.",
+      laws: [{ label: "MÖHUK (5718) m.26 – tüketici sözleşmeleri", url: MOHUK }]
+    }
+  };
+  var GUIDANCE_NOTE_TR = "Bilgi amaçlıdır, hukuki tavsiye değildir. Kendi durumunuz için mevzuatın güncel metnine bakın veya bir uzmana danışın.";
+
+  // src/core/history.js
+  function fingerprint(s) {
+    let h = 2166136261;
+    const t = String(s);
+    for (let i = 0; i < t.length; i++) {
+      h ^= t.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h.toString(16).padStart(8, "0");
+  }
+  var findingId = (f) => `${f.category}:${fingerprint(norm(f.evidence?.quote || f.quote || ""))}`;
+
+  // src/content/icons.js
+  var ICONS = {
+    logo: "M7 3h7l5 5v6M14 3v5h5M5 3h2v18h7M17 21a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm5 2-2.2-2.2",
+    close: "M6 6l12 12M18 6 6 18",
+    alert: "M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z",
+    help: "M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3m.1 4h.01M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z",
+    check: "M20 6 9 17l-5-5",
+    search: "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm10 2-4.3-4.3",
+    info: "M12 16v-4m0-4h.01M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z",
+    download: "M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2",
+    refresh: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5",
+    history: "M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2",
+    book: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5",
+    chevron: "m6 9 6 6 6-6",
+    shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
+    braces: "M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1",
+    // categories
+    auto_renewal: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5",
+    cancellation_refund: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5M9 9l6 6M15 9l-6 6",
+    price_change: "M22 7 13.5 15.5 8.5 10.5 2 17M16 7h6v6",
+    unilateral_change: "M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z",
+    account_termination: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM17 8l5 5M22 8l-5 5",
+    data_sharing: "M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4",
+    data_retention: "M12 8c5 0 9-1.3 9-3s-4-3-9-3-9 1.3-9 3 4 3 9 3zM3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5M3 12c0 1.7 4 3 9 3s9-1.3 9-3",
+    tracking_profiling: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+    content_license: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM9 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM21 15l-3.1-3.1a2 2 0 0 0-2.8 0L6 21",
+    ai_training: "M6 6h12v12H6zM9 9h6v6H9zM9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2",
+    liability_limit: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM4 4l16 16",
+    indemnification: "M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4",
+    dispute_waiver: "M14 13l-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10M16 16l6-6M8 8l6-6M9 7l8 8M21 11l-8-8",
+    governing_law: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+  };
+  var SHORT_TR = {
+    auto_renewal: "Oto. yenileme",
+    cancellation_refund: "İade / iptal",
+    price_change: "Fiyat değişimi",
+    unilateral_change: "Koşul değişimi",
+    account_termination: "Hesap kapatma",
+    data_sharing: "Veri paylaşımı",
+    data_retention: "Veri saklama",
+    tracking_profiling: "İzleme",
+    content_license: "İçerik lisansı",
+    ai_training: "YZ eğitimi",
+    liability_limit: "Sorumluluk",
+    indemnification: "Tazmin",
+    dispute_waiver: "Dava hakkı",
+    governing_law: "Yabancı hukuk"
+  };
+
+  // src/content/export.js
+  var STYLE = `
+body { font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #1a1e24; background: #f7f6f2; margin: 0; }
+main { max-width: 760px; margin: 0 auto; padding: 28px 20px 48px; }
+header { background: linear-gradient(135deg, #132238, #25456f); color: #fff; border-radius: 16px; padding: 20px 22px; }
+header h1 { margin: 0 0 4px; font-size: 22px; }
+header p { margin: 0; opacity: .85; font-size: 13.5px; }
+.note { background: #fff4d6; border: 1px solid #ecd9a0; color: #4a3700; border-radius: 12px; padding: 10px 14px; margin: 14px 0; font-size: 13.5px; }
+.card { background: #fff; border: 1px solid #e5e1d7; border-radius: 14px; padding: 14px 16px; margin: 12px 0; }
+.score { display: flex; gap: 18px; align-items: center; }
+.num { font-size: 44px; font-weight: 800; line-height: 1; }
+.band-low .num { color: #3d9566; } .band-medium .num { color: #d99a2b; } .band-high .num { color: #d4473c; } .band-uncertain .num { color: #8a6d1f; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .7px; color: #5d6672; margin: 26px 0 6px; }
+.f { border-left: 4px solid #e5e1d7; }
+.f.high { border-left-color: #d4473c; } .f.medium { border-left-color: #d99a2b; } .f.low { border-left-color: #3d9566; }
+.f h3 { margin: 0 0 4px; font-size: 16px; }
+.chip { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 9px; border-radius: 999px; background: #f1eee6; color: #5d6672; }
+.chip.high { background: #fde8e5; color: #962a21; } .chip.medium { background: #fcf0d6; color: #835608; } .chip.low { background: #e2f3e9; color: #256845; }
+blockquote { margin: 8px 0; padding: 9px 12px; background: #f5f2ea; border-left: 3px solid #c9a45c; border-radius: 0 8px 8px 0; font: 14px/1.55 Georgia, serif; white-space: pre-wrap; }
+.g { background: #f1eee6; border-radius: 10px; padding: 9px 12px; font-size: 13.5px; }
+.g ul { margin: 4px 0; padding-left: 20px; }
+.muted { color: #5d6672; font-size: 13px; }
+.u { background: #fff9ec; border-color: #ecd29a; }
+.sec { background: #fff4f3; border: 2px solid #d9534f; }
+code { white-space: pre-wrap; word-break: break-word; font: 12.5px/1.45 ui-monospace, Consolas, monospace; color: #962a21; }
+footer { margin-top: 28px; color: #5d6672; font-size: 12px; }
+@media print { body { background: #fff; } .card { break-inside: avoid; } }
+`;
+  function buildReportDocument(r, doc = document) {
+    const d = doc.implementation.createHTMLDocument("");
+    const h = (tag, props, ...kids) => {
+      const el = d.createElement(tag);
+      for (const [k, v] of Object.entries(props || {})) if (v != null && v !== false) el.setAttribute(k, String(v));
+      for (const kid of kids.flat(Infinity)) if (kid != null && kid !== false) el.append(typeof kid === "object" && kid.nodeType ? kid : d.createTextNode(String(kid)));
+      return el;
+    };
+    const dt = (iso) => {
+      try {
+        return new Date(iso).toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" });
+      } catch {
+        return String(iso || "");
+      }
+    };
+    const conflict = r.score_status === "conflict";
+    const en = r.engine || {};
+    const engine = en.mode === "llm" && !en.error ? `${en.provider} · ${en.model}` : "yalnızca kurallar (model kullanılmadı)";
+    d.documentElement.setAttribute("lang", "tr");
+    const csp = h("meta", { "http-equiv": "Content-Security-Policy", content: "default-src 'none'; style-src 'unsafe-inline'" });
+    const charset = h("meta", { charset: "utf-8" });
+    const vp = h("meta", { name: "viewport", content: "width=device-width, initial-scale=1" });
+    const style = h("style", {}, STYLE);
+    d.head.prepend(charset);
+    d.head.append(csp, vp, style);
+    d.title = `Küçük Punto raporu · ${r.meta?.title || r.meta?.host || "sözleşme"}`;
+    const main = h(
+      "main",
+      {},
+      h(
+        "header",
+        {},
+        h("h1", {}, "Küçük Punto · risk raporu"),
+        h("p", {}, r.meta?.title || "", r.meta?.host ? ` · ${r.meta.host}` : ""),
+        h("p", {}, `Analiz tarihi: ${dt(r.meta?.analysed_at)} · motor: ${engine}`)
+      ),
+      h("div", { class: "note" }, h("strong", {}, "Hukuki tavsiye değildir. "), r.disclaimer_tr || "Otomatik bir okuma yardımıdır; hata yapabilir."),
+      h(
+        "section",
+        { class: `card score band-${conflict ? "uncertain" : r.band}` },
+        h("div", { class: "num" }, conflict ? "?" : String(r.score)),
+        h(
+          "div",
+          {},
+          h("strong", {}, conflict ? "Belirsiz" : `${r.band_tr} (100 üzerinden)`),
+          h("div", { class: "muted" }, conflict ? `Model ${r.score}, bağımsız kurallar ${r.rules_score} dedi; bu fark yüzünden skor verilmedi.` : "Skoru yazılım hesaplar; yalnızca alıntısı metinde birebir bulunan bulgular sayılır."),
+          h("div", { class: "muted" }, r.meta?.selection ? "Yalnızca seçili metin incelendi." : `Metnin %${r.coverage?.ratioPct ?? "?"}'i incelendi.`)
+        )
+      ),
+      r.summary_tr ? h("section", { class: "card" }, r.summary_tr) : null
+    );
+    if (r.security?.detected) {
+      const s = r.security;
+      main.append(h(
+        "section",
+        { class: "card sec" },
+        h("strong", {}, "Sayfada yapay zekâya yönelik talimat bulundu"),
+        h("p", { class: "muted" }, "Bunlar modele gönderilmedi ya da model görmeden metinden çıkarıldı."),
+        [...s.hidden_suspicious.map((x) => x.text), ...s.quarantined.map((x) => x.text), ...s.model_reported.map((x) => x.quote)].slice(0, 8).map((t) => h("p", {}, h("code", {}, t)))
+      ));
+    }
+    main.append(h("h2", {}, `Riskli maddeler (${r.findings.length})`));
+    if (!r.findings.length) main.append(h("p", { class: "card muted" }, "Alıntıyla desteklenen riskli bir madde bulunamadı. Bu, metnin risksiz olduğu anlamına gelmez."));
+    for (const f of r.findings) {
+      const g = GUIDANCE[f.category];
+      main.append(h(
+        "article",
+        { class: `card f ${f.severity}` },
+        h("h3", {}, f.category_tr),
+        h("span", { class: `chip ${f.severity}` }, SEVERITY_TR[f.severity]),
+        " ",
+        h("span", { class: "muted" }, f.source === "rule" ? "kural eşleşmesi" : f.corroborated ? "model + kural" : `yalnızca model · güven %${Math.round(f.confidence * 100)}`),
+        f.explanation_tr ? h("p", {}, f.explanation_tr) : null,
+        h("blockquote", {}, "“" + f.evidence.quote + "”"),
+        g ? h(
+          "div",
+          { class: "g" },
+          h("strong", {}, "Ne yapabilirsiniz? "),
+          g.tip_tr,
+          g.laws.length ? h("ul", {}, g.laws.map((l) => h("li", {}, h("a", { href: l.url, rel: "noopener noreferrer" }, l.label)))) : null
+        ) : null
+      ));
+    }
+    if (r.uncertain?.length) {
+      main.append(
+        h("h2", {}, `Emin olamadıklarımız (${r.uncertain.length})`),
+        h(
+          "section",
+          { class: "card u" },
+          h("p", { class: "muted" }, "Bunlar skora katılmadı; kendiniz bakmanız gerekiyor."),
+          h("ul", {}, r.uncertain.map((u) => h("li", {}, u.text_tr, u.quote ? h("blockquote", {}, "“" + u.quote + "”") : null)))
+        )
+      );
+    }
+    if (r.rejected?.length) {
+      main.append(
+        h("h2", {}, `Kanıtlanamadığı için gösterilmeyen iddialar (${r.rejected.length})`),
+        h("section", { class: "card" }, h("ul", {}, r.rejected.map((x) => h("li", {}, x.reason_tr, x.quote ? h("div", { class: "muted" }, "“" + x.quote + "”") : null))))
+      );
+    }
+    main.append(h("footer", {}, GUIDANCE_NOTE_TR, " ", `Küçük Punto v${r.version} · istem ${en.prompt_version || "-"}.`));
+    d.body.append(main);
+    return d;
+  }
+  function reportFileName(r) {
+    const host = String(r.meta?.host || "sozlesme").replace(/[^a-z0-9.-]+/gi, "-").slice(0, 60) || "sozlesme";
+    const day = String(r.meta?.analysed_at || (/* @__PURE__ */ new Date()).toISOString()).slice(0, 10);
+    return `kucuk-punto-${host}-${day}.html`;
+  }
+  function downloadReport(r, doc = document) {
+    const d = buildReportDocument(r, doc);
+    const html = "<!doctype html>\n" + d.documentElement.outerHTML;
+    const url = URL.createObjectURL(new Blob([html], { type: "text/html;charset=utf-8" }));
+    const a = doc.createElement("a");
+    a.href = url;
+    a.download = reportFileName(r);
+    a.style.display = "none";
+    (doc.body || doc.documentElement).append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 3e4);
+    return a.download;
+  }
+
   // src/content/panel.js
   var STAGES = [
     ["capture", "Görünür metin okunuyor, gizli metin ayıklanıyor"],
@@ -370,14 +651,16 @@
   ];
   var UNCERTAIN_LABEL = {
     low_confidence: "Düşük güven",
-    rule_only: "Model ile kurallar ayrıştı",
+    rule_only: "Kontrol edin",
     model: "Modelin çekincesi",
     external_reference: "İncelenmeyen belge",
     truncated: "Kısmi inceleme",
     not_legal: "Belge türü",
     rules_only: "Model kullanılmadı",
     model_rule_conflict: "Tutarsız sonuç",
-    hidden_content: "Görünmeyen metin"
+    hidden_content: "Görünmeyen metin",
+    layout_suspect: "Sayfa okunamamış olabilir",
+    selection: "Yalnızca seçili metin"
   };
   var HIDDEN_REASON_TR = {
     "css-hidden": "CSS ile gizlenmiş",
@@ -388,120 +671,174 @@
     "zero-size": "Sıfır boyut",
     "offscreen": "Ekran dışı"
   };
-  var ICONS = {
-    scale: "M12 3v18M5 21h14M6 7h12M6 7l-3 7a3 3 0 0 0 6 0L6 7zm12 0-3 7a3 3 0 0 0 6 0l-3-7zM12 3l-1.5 2h3L12 3z",
-    close: "M6 6l12 12M18 6 6 18",
-    alert: "M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z",
-    help: "M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3m.1 4h.01M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z",
-    check: "M20 6 9 17l-5-5",
-    search: "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm10 2-4.3-4.3",
-    x: "M18 6 6 18M6 6l12 12",
-    info: "M12 16v-4m0-4h.01M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"
-  };
   var CSS2 = `
 :host { all: initial; }
 * { box-sizing: border-box; }
-.root { font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #1b1f24; -webkit-font-smoothing: antialiased; }
-button { font: inherit; cursor: pointer; }
+.root {
+  --bg:#f7f6f2; --card:#ffffff; --ink:#1a1e24; --muted:#5d6672; --line:#e5e1d7; --soft:#f1eee6;
+  --navy:#132238; --navy2:#25456f; --gold:#c9a45c;
+  --hi:#d4473c; --hi-bg:#fde8e5; --hi-ink:#962a21; --me:#d99a2b; --me-bg:#fcf0d6; --me-ink:#835608; --lo:#3d9566; --lo-bg:#e2f3e9; --lo-ink:#256845;
+  --warn:#d9a032; --warn-bg:#fff9ec; --warn-line:#ecd29a; --danger:#d9534f; --danger-bg:#fff4f3; --ok:#2f7d4f;
+  --quote:#f5f2ea; --shadow:0 1px 2px rgba(20,30,50,.06), 0 4px 14px rgba(20,30,50,.06);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased;
+}
+@media (prefers-color-scheme: dark) { .root {
+  --bg:#12151a; --card:#1b1f26; --ink:#e9ebee; --muted:#9aa3ae; --line:#2b313a; --soft:#232832;
+  --hi-bg:#3a1f1d; --hi-ink:#f2a29a; --me-bg:#3a2e14; --me-ink:#f0c470; --lo-bg:#173025; --lo-ink:#8fd3ad;
+  --warn-bg:#2b2416; --warn-line:#5a4823; --danger-bg:#2e1c1c; --quote:#232832; --shadow:0 1px 2px rgba(0,0,0,.3);
+} }
+button { font: inherit; cursor: pointer; color: inherit; }
+a { color: var(--navy2); }
+@media (prefers-color-scheme: dark) { a { color: #8db4e8; } }
 svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-.pill { position: fixed; right: 20px; bottom: 20px; z-index: 2147483647; display: flex; align-items: center; gap: 10px;
-  background: #16263d; color: #fff; border: 0; border-radius: 999px; padding: 10px 16px 10px 12px; box-shadow: 0 6px 24px rgba(10,20,40,.28); }
-.pill .mark { width: 28px; height: 28px; border-radius: 50%; background: #f4efe4; color: #16263d; display: grid; place-items: center; }
-.pill .t1 { font-weight: 650; font-size: 13px; display: block; text-align: left; }
-.pill .t2 { font-size: 12px; opacity: .75; display: block; text-align: left; }
-.pill:hover { background: #1f3a5f; }
+.pill { position: fixed; right: 20px; bottom: 20px; z-index: 2147483647; display: flex; align-items: center; gap: 12px; border: 0; border-radius: 16px;
+  padding: 10px 16px 10px 10px; color: #fff; background: linear-gradient(135deg, var(--navy), var(--navy2)); box-shadow: 0 10px 30px rgba(10,20,40,.35); }
+.pill .mark { width: 34px; height: 34px; border-radius: 10px; background: rgba(255,255,255,.12); display: grid; place-items: center; }
+.pill .mark svg { width: 20px; height: 20px; color: var(--gold); }
+.pill .t1 { font-weight: 700; font-size: 13.5px; display: block; text-align: left; }
+.pill .t2 { font-size: 12px; opacity: .8; display: block; text-align: left; }
+.pill:hover { filter: brightness(1.08); }
 
-.panel { position: fixed; top: 0; right: 0; bottom: 0; width: 420px; max-width: 100vw; z-index: 2147483647; background: #fbfaf7;
-  border-left: 1px solid #ddd8cc; box-shadow: -10px 0 40px rgba(10,20,40,.18); display: flex; flex-direction: column; }
+.panel { position: fixed; top: 0; right: 0; bottom: 0; width: 440px; max-width: 100vw; z-index: 2147483647; background: var(--bg);
+  border-left: 1px solid var(--line); box-shadow: -12px 0 40px rgba(10,20,40,.22); display: flex; flex-direction: column; }
 .panel[hidden], .pill[hidden] { display: none; }
-header { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: #16263d; color: #fff; }
-header .brand { font-weight: 700; font-size: 15px; letter-spacing: .2px; flex: 1; display: flex; align-items: center; gap: 8px; }
-header .brand small { font-weight: 500; opacity: .7; font-size: 12px; }
-header button { background: transparent; border: 0; color: #fff; padding: 4px; border-radius: 6px; display: grid; }
+header { display: flex; align-items: center; gap: 10px; padding: 14px 16px; color: #fff; background: linear-gradient(135deg, var(--navy), var(--navy2)); }
+header .logo { width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,.12); display: grid; place-items: center; }
+header .logo svg { color: var(--gold); width: 18px; height: 18px; }
+header .brand { flex: 1; line-height: 1.2; }
+header .brand b { display: block; font-size: 15px; letter-spacing: .2px; }
+header .brand small { opacity: .75; font-size: 12px; }
+header button { background: transparent; border: 0; color: #fff; padding: 6px; border-radius: 8px; display: grid; }
 header button:hover { background: rgba(255,255,255,.12); }
 
-.disclaimer { display: flex; gap: 10px; padding: 10px 16px; background: #fff4d6; border-bottom: 1px solid #ecd9a0; color: #5a4300; font-size: 12.5px; line-height: 1.45; }
-.disclaimer strong { display: block; font-size: 13px; color: #3d2d00; }
+.disclaimer { display: flex; gap: 10px; padding: 9px 16px; background: #fff4d6; border-bottom: 1px solid #ecd9a0; color: #5a4300; font-size: 12.5px; line-height: 1.45; }
+.disclaimer strong { color: #3d2d00; }
+@media (prefers-color-scheme: dark) { .disclaimer { background: #2e2713; border-color: #5a4823; color: #e9d59b; } .disclaimer strong { color: #f6e3a8; } }
 
-.body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-.card { background: #fff; border: 1px solid #e6e2d8; border-radius: 10px; padding: 14px; }
-.muted { color: #5b6470; }
-.small { font-size: 12.5px; }
-h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: #5b6470; margin: 6px 0 -4px; font-weight: 650; }
+.body { flex: 1; overflow-y: auto; padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; box-shadow: var(--shadow); }
+.muted { color: var(--muted); } .small { font-size: 12.5px; }
+h2 { display: flex; align-items: center; gap: 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); margin: 8px 2px -2px; font-weight: 700; }
+h2 .n { background: var(--soft); color: var(--ink); border-radius: 999px; padding: 0 8px; font-size: 11.5px; letter-spacing: 0; }
 p { margin: 0; }
-
-.btn { border: 1px solid #c9c3b4; background: #fff; color: #1b1f24; border-radius: 8px; padding: 8px 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
-.btn:hover { border-color: #16263d; }
-.btn.primary { background: #16263d; color: #fff; border-color: #16263d; font-weight: 600; padding: 11px 14px; width: 100%; justify-content: center; font-size: 14px; }
-.btn.primary:hover { background: #1f3a5f; }
-.btn.link { border: 0; background: none; padding: 2px 0; color: #1f3a5f; font-weight: 600; font-size: 12.5px; }
-.btn.link:hover { text-decoration: underline; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
+.btn { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { border-color: var(--navy2); }
+.btn.primary { background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; border: 0; font-weight: 650; padding: 12px 14px; width: 100%; justify-content: center; font-size: 14.5px; box-shadow: 0 6px 16px rgba(19,34,56,.25); }
+.btn.link { border: 0; background: none; padding: 2px 0; color: var(--navy2); font-weight: 600; font-size: 12.5px; }
+@media (prefers-color-scheme: dark) { .btn.link { color: #8db4e8; } }
+.btn.link:hover { text-decoration: underline; }
+
+.hero { text-align: center; padding: 22px 16px; }
+.hero .big { width: 54px; height: 54px; margin: 0 auto 10px; border-radius: 16px; display: grid; place-items: center; background: linear-gradient(135deg, var(--navy), var(--navy2)); }
+.hero .big svg { width: 28px; height: 28px; color: var(--gold); }
+.hero h3 { margin: 0 0 4px; font-size: 16px; }
+.tips { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.tips div { display: flex; gap: 8px; align-items: flex-start; }
+kbd { font: 11px ui-monospace, Menlo, Consolas, monospace; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; background: var(--card); }
+
+.progress { height: 4px; border-radius: 4px; background: var(--soft); overflow: hidden; margin-bottom: 14px; }
+.progress span { display: block; height: 100%; width: 40%; border-radius: 4px; background: linear-gradient(90deg, var(--navy2), var(--gold)); animation: slide 1.2s ease-in-out infinite; }
+@keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(260%); } }
 .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.steps li { display: flex; gap: 10px; align-items: center; color: #8a919b; }
-.steps li .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #d2cdc1; flex: none; display: grid; place-items: center; }
-.steps li.on { color: #1b1f24; font-weight: 600; }
-.steps li.on .dot { border-color: #16263d; border-top-color: transparent; animation: spin .8s linear infinite; }
-.steps li.ok { color: #2f6b47; }
-.steps li.ok .dot { border-color: #2f7d4f; background: #2f7d4f; color: #fff; }
+.steps li { display: flex; gap: 10px; align-items: center; color: var(--muted); }
+.steps li .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line); flex: none; display: grid; place-items: center; }
+.steps li.on { color: var(--ink); font-weight: 600; }
+.steps li.on .dot { border-color: var(--navy2); border-top-color: transparent; animation: spin .8s linear infinite; }
+.steps li.ok { color: var(--ok); }
+.steps li.ok .dot { border-color: var(--ok); background: var(--ok); color: #fff; }
 .steps li.ok .dot svg { width: 11px; height: 11px; stroke-width: 3; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.score { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; align-items: center; border-width: 2px; }
-.score .num { font-size: 44px; font-weight: 750; line-height: 1; letter-spacing: -1px; grid-row: span 2; }
-.score .num small { font-size: 15px; font-weight: 600; color: #8a919b; letter-spacing: 0; }
-.score .band { font-size: 18px; font-weight: 700; }
-.score .how { grid-column: 1 / -1; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0dbcf; }
-.score[data-band="low"] { border-color: #8cc5a3; } .score[data-band="low"] .num, .score[data-band="low"] .band { color: #2f7d4f; }
-.score[data-band="medium"] { border-color: #e6c27a; } .score[data-band="medium"] .num, .score[data-band="medium"] .band { color: #a0660f; }
-.score[data-band="high"] { border-color: #e59a92; } .score[data-band="high"] .num, .score[data-band="high"] .band { color: #b8322a; }
-.score[data-band="uncertain"] { border-color: #e6c27a; border-style: dashed; background: #fffaf0; } .score[data-band="uncertain"] .num, .score[data-band="uncertain"] .band { color: #8a5a0b; }
-.engine { display: inline-block; font-size: 11.5px; padding: 1px 8px; border-radius: 999px; background: #eef1f5; color: #3b4a5c; }
-.engine.warn { background: #fdecea; color: #8c2a22; }
+.score { display: grid; grid-template-columns: 168px 1fr; gap: 6px 14px; align-items: center; }
+.gauge { width: 168px; height: 100px; }
+.gauge .track { stroke: var(--soft); }
+.gauge text { fill: var(--ink); font-family: system-ui, sans-serif; }
+.score .band { font-size: 19px; font-weight: 750; line-height: 1.15; }
+.score[data-band="low"] .band { color: var(--lo); } .score[data-band="medium"] .band { color: var(--me); } .score[data-band="high"] .band { color: var(--hi); }
+.score[data-band="uncertain"] { border: 2px dashed var(--warn-line); background: var(--warn-bg); } .score[data-band="uncertain"] .band { color: var(--me-ink); }
+.counts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.engine { display: inline-block; font-size: 11.5px; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--muted); margin-top: 6px; }
+.engine.warn { background: var(--hi-bg); color: var(--hi-ink); }
+.how { grid-column: 1 / -1; padding-top: 8px; border-top: 1px dashed var(--line); }
 
-.alert { border: 2px solid #d9534f; background: #fff6f5; }
-.alert .title { display: flex; gap: 8px; align-items: center; font-weight: 700; color: #a52a22; margin-bottom: 6px; }
+.changes { border-left: 4px solid var(--navy2); }
+.changes[data-status="changed"] { border-left-color: var(--warn); background: var(--warn-bg); }
+.changes .title { display: flex; gap: 8px; align-items: center; font-weight: 700; }
+.changes ul { margin: 8px 0 0; padding-left: 18px; font-size: 12.5px; display: flex; flex-direction: column; gap: 4px; }
+.delta { font-weight: 700; } .delta.up { color: var(--hi); } .delta.down { color: var(--lo); }
+
+.alert { border: 2px solid var(--danger); background: var(--danger-bg); }
+.alert .title { display: flex; gap: 8px; align-items: center; font-weight: 700; color: var(--hi-ink); margin-bottom: 6px; }
 .alert ul { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
-.alert li { font-size: 12.5px; background: #fff; border: 1px solid #f0c9c5; border-radius: 8px; padding: 8px; }
-.alert li code { display: block; margin-top: 4px; white-space: pre-wrap; word-break: break-word; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #6b1d17; }
+.alert li { font-size: 12.5px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+.alert li code { display: block; margin-top: 4px; white-space: pre-wrap; word-break: break-word; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--hi-ink); }
 
-.chip { display: inline-block; font-size: 11.5px; font-weight: 650; padding: 1px 8px; border-radius: 999px; background: #eee; color: #333; }
-.chip[data-sev="high"] { background: #fbe1de; color: #9b2820; }
-.chip[data-sev="medium"] { background: #fbefd5; color: #8a5a0b; }
-.chip[data-sev="low"] { background: #e6f2ea; color: #2a6b43; }
-.chip.reason { background: #f6dcd9; color: #7a221b; }
+.map { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.cell { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 7px 4px 6px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10.5px; line-height: 1.15; text-align: center; color: var(--muted); min-height: 58px; }
+.cell svg { width: 17px; height: 17px; }
+.cell[data-state="high"] { background: var(--hi-bg); border-color: transparent; color: var(--hi-ink); font-weight: 650; }
+.cell[data-state="medium"] { background: var(--me-bg); border-color: transparent; color: var(--me-ink); font-weight: 650; }
+.cell[data-state="low"] { background: var(--lo-bg); border-color: transparent; color: var(--lo-ink); font-weight: 650; }
+.cell[data-state="check"] { border: 1.5px dashed var(--warn); color: var(--me-ink); }
+.cell[data-state="none"] { opacity: .55; cursor: default; }
+.cell:not([data-state="none"]):hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+.legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
 
-.finding { display: flex; flex-direction: column; gap: 8px; border-left-width: 4px; }
-.finding[data-severity="high"] { border-left-color: #d0453b; }
-.finding[data-severity="medium"] { border-left-color: #d9a032; }
-.finding[data-severity="low"] { border-left-color: #59a77a; }
-.finding .cat { font-weight: 700; font-size: 14.5px; }
-blockquote { margin: 0; padding: 8px 10px; background: #f6f3ec; border-left: 3px solid #b9b09b; border-radius: 0 6px 6px 0; font: 12.5px/1.5 Georgia, "Times New Roman", serif; color: #33302a; white-space: pre-wrap; word-break: break-word; }
-blockquote .where { display: block; font: 600 11px/1.4 system-ui, sans-serif; color: #7a7466; margin-bottom: 3px; text-transform: uppercase; letter-spacing: .4px; }
-.meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: #5b6470; }
-.badge { display: inline-flex; gap: 4px; align-items: center; font-size: 11.5px; font-weight: 600; }
-.badge.ok { color: #2f6b47; } .badge.solo { color: #7a6a3a; } .badge.rule { color: #45607d; }
+.summary { font-size: 13.5px; border-left: 4px solid var(--gold); }
+
+.chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--muted); letter-spacing: .2px; }
+.chip[data-sev="high"] { background: var(--hi-bg); color: var(--hi-ink); }
+.chip[data-sev="medium"] { background: var(--me-bg); color: var(--me-ink); }
+.chip[data-sev="low"] { background: var(--lo-bg); color: var(--lo-ink); }
+.chip.new { background: var(--navy2); color: #fff; }
+.chip.check { background: transparent; border: 1.5px dashed var(--warn); color: var(--me-ink); }
+.chip.reason { background: var(--hi-bg); color: var(--hi-ink); }
+
+.finding { display: flex; flex-direction: column; gap: 9px; border-left: 4px solid var(--line); transition: box-shadow .3s, transform .3s; }
+.finding[data-severity="high"] { border-left-color: var(--hi); } .finding[data-severity="medium"] { border-left-color: var(--me); } .finding[data-severity="low"] { border-left-color: var(--lo); }
+.finding.flash { box-shadow: 0 0 0 3px var(--gold); }
+.fhead { display: flex; gap: 10px; align-items: center; }
+.ficon { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; flex: none; background: var(--soft); }
+.finding[data-severity="high"] .ficon { background: var(--hi-bg); color: var(--hi-ink); }
+.finding[data-severity="medium"] .ficon { background: var(--me-bg); color: var(--me-ink); }
+.finding[data-severity="low"] .ficon { background: var(--lo-bg); color: var(--lo-ink); }
+.fhead .cat { font-weight: 700; font-size: 14.5px; line-height: 1.2; }
+blockquote { margin: 0; padding: 9px 11px; background: var(--quote); border-left: 3px solid var(--gold); border-radius: 0 8px 8px 0; font: 12.8px/1.55 Georgia, "Times New Roman", serif; white-space: pre-wrap; word-break: break-word; }
+blockquote .where { display: block; font: 700 10.5px/1.4 system-ui, sans-serif; color: var(--muted); margin-bottom: 3px; text-transform: uppercase; letter-spacing: .5px; }
+.meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.badge { display: inline-flex; gap: 4px; align-items: center; font-size: 11.5px; font-weight: 650; }
+.badge.ok { color: var(--ok); } .badge.solo { color: var(--me-ink); } .badge.rule { color: var(--navy2); }
 .badge svg { width: 13px; height: 13px; }
+.guide { display: none; font-size: 12.5px; background: var(--soft); border-radius: 10px; padding: 10px 11px; }
+.guide.open { display: block; }
+.guide b { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin: 0 0 3px; }
+.guide ul { margin: 4px 0 6px; padding-left: 18px; }
+.guide .note { font-size: 11.5px; color: var(--muted); }
+.acts { display: flex; gap: 14px; }
 
-.uncertain { border: 1px solid #e6c27a; background: #fffaf0; }
-.uncertain .title { display: flex; gap: 8px; align-items: center; font-weight: 700; color: #7d5508; margin-bottom: 4px; }
+.uncertain { border: 1px solid var(--warn-line); background: var(--warn-bg); }
+.uncertain .title { display: flex; gap: 8px; align-items: center; font-weight: 700; color: var(--me-ink); margin-bottom: 4px; }
 .uncertain ul { margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
-.uncertain li { font-size: 12.5px; border-top: 1px solid #f1e2bd; padding-top: 8px; }
+.uncertain li { font-size: 12.5px; border-top: 1px solid var(--warn-line); padding-top: 8px; transition: box-shadow .3s; border-radius: 6px; }
 .uncertain li:first-child { border-top: 0; padding-top: 0; }
-.uncertain li b { display: block; font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; color: #8a5a0b; }
+.uncertain li.flash { box-shadow: 0 0 0 3px var(--gold); }
+.uncertain li b { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--me-ink); }
 .uncertain blockquote { margin-top: 4px; font-size: 12px; }
 
 details.rejected { font-size: 12.5px; }
-details.rejected summary { cursor: pointer; font-weight: 650; color: #5b6470; }
+details.rejected summary { cursor: pointer; font-weight: 650; color: var(--muted); }
 details.rejected ul { padding-left: 18px; margin: 8px 0 0; display: flex; flex-direction: column; gap: 6px; }
-details.rejected s { color: #8a919b; }
+details.rejected s { color: var(--muted); }
 
-.err { border: 2px solid #d9534f; background: #fff6f5; display: flex; flex-direction: column; gap: 10px; }
-.err .title { font-weight: 700; color: #a52a22; display: flex; gap: 8px; align-items: center; }
-footer { padding: 10px 16px; border-top: 1px solid #e6e2d8; background: #f4f1ea; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 11.5px; color: #6b7280; }
-.toast { position: absolute; left: 50%; bottom: 60px; transform: translateX(-50%); background: #16263d; color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 12.5px; }
+.err { border: 2px solid var(--danger); background: var(--danger-bg); display: flex; flex-direction: column; gap: 10px; }
+.err .title { font-weight: 700; color: var(--hi-ink); display: flex; gap: 8px; align-items: center; }
+footer:empty { display: none; }
+footer { padding: 10px 14px; border-top: 1px solid var(--line); background: var(--card); display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+footer .btn { padding: 6px 10px; font-size: 12.5px; }
 `;
   function createPanel({ doc = document, onAnalyze, onOpenOptions, onShowQuote, onClose } = {}) {
     const h = (tag, props, ...kids) => {
@@ -516,18 +853,29 @@ footer { padding: 10px 16px; border-top: 1px solid #e6e2d8; background: #f4f1ea;
       for (const kid of kids.flat(Infinity)) if (kid != null && kid !== false) el.append(kid instanceof Node ? kid : doc.createTextNode(String(kid)));
       return el;
     };
+    const NS = "http://www.w3.org/2000/svg";
+    const s = (tag, attrs = {}) => {
+      const el = doc.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+      return el;
+    };
     const icon = (name) => {
-      const NS = "http://www.w3.org/2000/svg";
-      const svg = doc.createElementNS(NS, "svg");
-      svg.setAttribute("viewBox", "0 0 24 24");
-      svg.setAttribute("class", "i");
-      svg.setAttribute("aria-hidden", "true");
-      const p = doc.createElementNS(NS, "path");
-      p.setAttribute("d", ICONS[name]);
-      svg.append(p);
+      const svg = s("svg", { viewBox: "0 0 24 24", class: "i", "aria-hidden": "true" });
+      svg.append(s("path", { d: ICONS[name] || ICONS.info }));
       return svg;
     };
     const fmt = (n) => Number(n).toLocaleString("tr-TR");
+    const dateTr = (iso) => {
+      try {
+        return new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+      } catch {
+        return "";
+      }
+    };
+    const clip = (t, n) => {
+      t = String(t || "");
+      return t.length > n ? t.slice(0, n - 1) + "…" : t;
+    };
     const host = doc.createElement("div");
     host.setAttribute("data-kp-host", "");
     const shadow = host.attachShadow({ mode: "open" });
@@ -535,13 +883,12 @@ footer { padding: 10px 16px; border-top: 1px solid #e6e2d8; background: #f4f1ea;
     style.textContent = CSS2;
     const root = h("div", { class: "root" });
     shadow.append(style, root);
-    const pillTitle = h("span", { class: "t1" }, "Küçük Punto");
     const pillSub = h("span", { class: "t2" }, "");
     const pill = h(
       "button",
       { class: "pill", kp: "pill", hidden: true, type: "button", onclick: () => open() },
-      h("span", { class: "mark" }, icon("scale")),
-      h("span", {}, pillTitle, pillSub)
+      h("span", { class: "mark" }, icon("logo")),
+      h("span", {}, h("span", { class: "t1" }, "Küçük Punto"), pillSub)
     );
     const body = h("div", { class: "body", kp: "body" });
     const footer = h("footer", { kp: "footer" });
@@ -551,10 +898,11 @@ footer { padding: 10px 16px; border-top: 1px solid #e6e2d8; background: #f4f1ea;
       h(
         "header",
         {},
-        h("div", { class: "brand" }, icon("scale"), "Küçük Punto", h("small", {}, "sözleşme risk raporu")),
+        h("div", { class: "logo" }, icon("logo")),
+        h("div", { class: "brand" }, h("b", {}, "Küçük Punto"), h("small", {}, "sözleşme risk raporu")),
         h("button", { kp: "close", type: "button", title: "Kapat", "aria-label": "Kapat", onclick: () => close() }, icon("close"))
       ),
-      // Always visible, above the scrolling area, in every state (requirement: no legal advice, clearly shown)
+      // always visible, above the scrolling area, in every state
       h(
         "div",
         { class: "disclaimer", kp: "disclaimer", role: "note" },
@@ -562,7 +910,7 @@ footer { padding: 10px 16px; border-top: 1px solid #e6e2d8; background: #f4f1ea;
         h(
           "div",
           {},
-          h("strong", {}, "Hukuki tavsiye değildir."),
+          h("strong", {}, "Hukuki tavsiye değildir. "),
           "Otomatik bir okuma yardımıdır; hata yapabilir ve sözleşmenin yerine geçmez. Önemli kararlarda metnin tamamını okuyun, gerekirse bir hukukçuya danışın."
         )
       ),
@@ -614,32 +962,37 @@ footer { padding: 10px 16px; border-top: 1px solid #e6e2d8; background: #f4f1ea;
       body.append(
         h(
           "div",
-          { class: "card" },
-          h("p", { style: "font-weight:650;margin-bottom:4px" }, d?.isLegal ? `Bu sayfa: ${d.kindTr}` : "Bu sayfa bir sözleşme / politika metnine benzemiyor."),
-          h("p", { class: "muted small" }, d ? `Yaklaşık ${fmt(d.words)} kelime.` : ""),
-          h(
-            "p",
-            { class: "muted small", style: "margin-top:8px" },
-            "Analiz başlatıldığında yalnızca ekranda görünen metin, ayarlarda seçtiğiniz model sağlayıcısına kendi anahtarınızla gönderilir. Gizli metinler gönderilmez, sadece size raporlanır."
-          )
+          { class: "card hero" },
+          h("div", { class: "big" }, icon("logo")),
+          h("h3", {}, d?.isLegal ? `${d.kindTr} algılandı` : "Bu sayfadaki koşulları inceleyelim"),
+          h("p", { class: "muted small" }, d ? `Yaklaşık ${fmt(d.words)} kelime. ` : "", "Riskli maddeleri, sözleşmeden birebir alıntılarıyla birlikte gösteririm.")
         ),
-        h("button", { class: "btn primary", kp: "analyze", type: "button", onclick: () => onAnalyze?.({}) }, "Riskleri analiz et"),
-        h("button", { class: "btn link", kp: "open-options", type: "button", onclick: () => onOpenOptions?.() }, "Model ve API anahtarı ayarları")
+        h("button", { class: "btn primary", kp: "analyze", type: "button", onclick: () => onAnalyze?.({ page: true }) }, "Riskleri analiz et"),
+        h(
+          "div",
+          { class: "card tips" },
+          h("div", {}, icon("shield"), h("span", {}, "Yalnızca ekranda görünen metin, ayarlarda seçtiğiniz model sağlayıcısına kendi anahtarınızla gönderilir. Gizli metinler gönderilmez.")),
+          h("div", {}, icon("search"), h("span", {}, 'Sayfa düzgün okunamazsa: sözleşme metnini seçin, sağ tıklayın → "Küçük Punto ile seçili metni analiz et".')),
+          h("div", {}, icon("history"), h("span", {}, "Aynı sözleşmeyi daha sonra tekrar analiz ederseniz neyin değiştiğini gösteririm.")),
+          h("div", {}, icon("info"), h("span", {}, "Kısayol: ", h("kbd", {}, "Alt"), " + ", h("kbd", {}, "Shift"), " + ", h("kbd", {}, "K")))
+        ),
+        h("button", { class: "btn link", kp: "open-options", type: "button", onclick: () => onOpenOptions?.() }, "Model, API anahtarı ve analiz geçmişi")
       );
     }
     function renderLoading() {
       const t0 = state.t0 || (state.t0 = Date.now());
-      const order = STAGES.map((s) => s[0]).filter((s) => s !== "repair" || state.stage === "repair");
+      const order = STAGES.map((x) => x[0]).filter((x) => x !== "repair" || state.stage === "repair");
       const cur = order.indexOf(state.stage || "capture");
       const elapsed = h("span", { kp: "elapsed" }, `${Math.round((Date.now() - t0) / 1e3)} sn`);
       body.append(h(
         "div",
         { class: "card", kp: "loading" },
+        h("div", { class: "progress" }, h("span", {})),
         h("ul", { class: "steps" }, order.map((id, i) => h(
           "li",
           { class: i < cur ? "ok" : i === cur ? "on" : "" },
           h("span", { class: "dot" }, i < cur ? icon("check") : ""),
-          STAGES.find((s) => s[0] === id)[1]
+          STAGES.find((x) => x[0] === id)[1]
         ))),
         h("p", { class: "muted small", style: "margin-top:12px" }, "Geçen süre: ", elapsed)
       ));
@@ -658,67 +1011,171 @@ footer { padding: 10px 16px; border-top: 1px solid #e6e2d8; background: #f4f1ea;
           "div",
           { class: "row" },
           e.code === "NO_KEY" ? h("button", { class: "btn", kp: "open-options", type: "button", onclick: () => onOpenOptions?.() }, "Ayarları aç") : null,
-          h("button", { class: "btn", kp: "rules-only", type: "button", onclick: () => onAnalyze?.({ rulesOnly: true }) }, "Yalnızca kurallarla analiz et"),
+          e.code === "EMPTY_SELECTION" ? null : h("button", { class: "btn", kp: "rules-only", type: "button", onclick: () => onAnalyze?.({ rulesOnly: true }) }, "Yalnızca kurallarla analiz et"),
           e.code !== "NO_KEY" ? h("button", { class: "btn", kp: "retry", type: "button", onclick: () => onAnalyze?.({}) }, "Tekrar dene") : null
         )
       ));
+    }
+    function gauge(score, band, conflict) {
+      const svg = s("svg", { viewBox: "0 0 200 116", class: "gauge", role: "img", "aria-label": conflict ? "Skor belirsiz" : `Risk skoru ${score} / 100` });
+      const arc = "M 20 100 A 80 80 0 0 1 180 100";
+      svg.append(s("path", { d: arc, class: "track", fill: "none", "stroke-width": 16, "stroke-linecap": "round" }));
+      const color = conflict ? "#b9a06a" : { low: "#3d9566", medium: "#d99a2b", high: "#d4473c" }[band];
+      const len = Math.PI * 80, v = conflict ? 0.5 : Math.max(0.02, Math.min(1, score / 100));
+      svg.append(s("path", { d: arc, fill: "none", stroke: color, "stroke-width": 16, "stroke-linecap": "round", "stroke-dasharray": `${(len * v).toFixed(1)} ${len.toFixed(1)}`, ...conflict ? { "stroke-opacity": 0.5 } : {} }));
+      for (const t of [30, 60]) {
+        const a = Math.PI * (1 - t / 100);
+        svg.append(s("line", { x1: 100 + 62 * Math.cos(a), y1: 100 - 62 * Math.sin(a), x2: 100 + 70 * Math.cos(a), y2: 100 - 70 * Math.sin(a), stroke: "#9aa3ae", "stroke-width": 2 }));
+      }
+      const num = s("text", { x: 100, y: 92, "text-anchor": "middle", "font-size": 40, "font-weight": 800 });
+      num.textContent = conflict ? "?" : String(score);
+      const sub = s("text", { x: 100, y: 112, "text-anchor": "middle", "font-size": 12, fill: "#8a929c" });
+      sub.textContent = "/ 100";
+      svg.append(num, sub);
+      return svg;
+    }
+    function cellStates(r) {
+      const st = {};
+      for (const f of r.findings) if (!st[f.category] || SEVERITY[f.severity] > SEVERITY[st[f.category]]) st[f.category] = f.severity;
+      for (const u of r.uncertain) if ((u.kind === "rule_only" || u.kind === "low_confidence") && u.category && !st[u.category]) st[u.category] = "check";
+      return st;
+    }
+    function flash(el) {
+      if (!el) return;
+      el.scrollIntoView({ block: "center" });
+      el.classList.add("flash");
+      setTimeout(() => el.classList.remove("flash"), 1400);
     }
     function renderReport() {
       const r = state.report;
       const en = r.engine || {};
       const modelUsed = en.mode === "llm" && !en.error;
-      const engineLabel = modelUsed ? `${en.provider || "model"} · ${en.model}` : en.error ? `Model hatası → yalnızca kurallar` : "Yalnızca kurallar (model kullanılmadı)";
       const conflict = r.score_status === "conflict";
+      const engineLabel = modelUsed ? `${en.provider || "model"} · ${en.model}` : en.error ? "Model hatası → yalnızca kurallar" : "Yalnızca kurallar (model kullanılmadı)";
+      const sevCount = (k) => r.findings.filter((f) => f.severity === k).length;
+      const newIds = new Set(r.changes?.new_ids || []);
       body.append(h(
         "section",
         { class: "card score", kp: "score", "data-band": conflict ? "uncertain" : r.band, "data-score": conflict ? "" : r.score, "data-status": r.score_status },
-        h("div", { class: "num" }, conflict ? "?" : String(r.score), h("small", {}, " /100")),
-        h("div", { class: "band", kp: "band" }, conflict ? "Belirsiz" : r.band_tr),
-        h("div", {}, h("span", { class: "engine" + (modelUsed ? "" : " warn"), kp: "engine" }, engineLabel)),
-        conflict ? h(
-          "p",
-          { class: "small", style: "grid-column:1/-1;margin-top:6px", kp: "conflict" },
-          `Model ${r.score} diyor, bağımsız kurallar ${r.rules_score} diyor. Bu kadar büyük bir fark, modelin sayfadaki bir ifadeyle yanıltıldığını gösterebilir. Bu yüzden skor vermiyoruz; aşağıdaki "Emin olamadıklarımız" bölümüne bakın.`
-        ) : null,
+        gauge(r.score, r.band, conflict),
+        h(
+          "div",
+          {},
+          h("div", { class: "band", kp: "band" }, conflict ? "Belirsiz" : r.band_tr),
+          h(
+            "div",
+            { class: "counts" },
+            ["high", "medium", "low"].map((k) => sevCount(k) ? h("span", { class: "chip", "data-sev": k }, `${sevCount(k)} ${SEVERITY_TR[k].toLowerCase()}`) : null),
+            r.findings.length ? null : h("span", { class: "chip" }, "kanıtlı bulgu yok")
+          ),
+          h("span", { class: "engine" + (modelUsed ? "" : " warn"), kp: "engine" }, engineLabel)
+        ),
+        conflict ? h("p", { class: "small how", kp: "conflict" }, `Model ${r.score} diyor, bağımsız kurallar ${r.rules_score} diyor. Bu kadar büyük bir fark, modelin sayfadaki bir ifadeyle yanıltıldığını gösterebilir. Bu yüzden skor vermiyoruz; aşağıdaki "Emin olamadıklarımız" bölümüne bakın.`) : null,
         h(
           "p",
           { class: "how muted small" },
-          "Skoru model değil yazılım hesaplar: yalnızca alıntısı metinde birebir bulunan bulgular sayılır. ",
-          `Metnin %${r.coverage.ratioPct}'i incelendi · ${fmt(r.clause_count)} parça · ${(r.trace.ms / 1e3).toFixed(1).replace(".", ",")} sn.`
+          "Skoru model değil yazılım hesaplar; yalnızca alıntısı metinde birebir bulunan bulgular sayılır. ",
+          `${r.meta.selection ? "Seçili metin" : `Metnin %${r.coverage.ratioPct}'i`} incelendi · ${fmt(r.clause_count)} parça · ${(r.trace.ms / 1e3).toFixed(1).replace(".", ",")} sn.`
         )
       ));
-      const s = r.security;
-      if (s.detected) {
+      const ch = r.changes;
+      if (ch && ch.status === "first") {
+        body.append(h(
+          "section",
+          { class: "card changes small", kp: "changes", "data-status": "first" },
+          h("div", { class: "title" }, icon("history"), "Bu sözleşmenin parmak izi kaydedildi"),
+          h("p", { class: "muted" }, "Metnin kendisi değil, yalnızca özeti (parmak izi) bu tarayıcıda saklandı. Sözleşme değişirse bir dahaki analizde neyin değiştiğini göstereceğim.")
+        ));
+      } else if (ch && ch.status === "same") {
+        body.append(h(
+          "section",
+          { class: "card changes small", kp: "changes", "data-status": "same" },
+          h("div", { class: "title" }, icon("check"), "Son analizinizden beri değişmedi"),
+          h("p", { class: "muted" }, `${dateTr(ch.prev_date)} tarihli analizle metin birebir aynı.`)
+        ));
+      } else if (ch && ch.status === "changed") {
+        const d = ch.score_delta;
+        const counts = ch.by === "clause" ? [ch.clauses_added ? `${ch.clauses_added} madde eklendi ya da değişti` : null, ch.clauses_removed ? `${ch.clauses_removed} madde kaldırıldı ya da değişti` : null].filter(Boolean).join(", ") : "";
+        body.append(h(
+          "section",
+          { class: "card changes", kp: "changes", "data-status": "changed", "data-added": (ch.added || []).length, "data-removed": (ch.removed || []).length },
+          h("div", { class: "title" }, icon("history"), "Bu sözleşme değişmiş"),
+          h(
+            "p",
+            { class: "small" },
+            `${dateTr(ch.prev_date)} tarihli analizinizden beri metin değişti${counts ? ": " + counts : ""}. Skor: ${ch.prev_score} → ${r.score} `,
+            d ? h("span", { class: "delta " + (d > 0 ? "up" : "down") }, `(${d > 0 ? "+" : ""}${d})`) : null
+          ),
+          ch.added?.length || ch.removed?.length || ch.checks?.length ? h(
+            "ul",
+            {},
+            (ch.added || []).map((a) => h("li", { kp: "change-added" }, h("span", { class: "chip new" }, "YENİ RİSK"), " ", h("b", {}, a.category_tr), ": ", h("span", { class: "muted" }, "“" + clip(a.quote, 90) + "”"))),
+            (ch.checks || []).map((a) => h("li", { kp: "change-check" }, h("span", { class: "chip check" }, "YENİ · KONTROL EDİN"), " ", h("b", {}, a.category_tr), ": ", h("span", { class: "muted" }, "“" + clip(a.quote, 90) + "”"))),
+            (ch.removed || []).map((a) => h("li", { kp: "change-removed" }, h("span", { class: "chip" }, "KALKTI"), " ", h("b", {}, a.category_tr), ": ", h("span", { class: "muted" }, "“" + clip(a.quote, 90) + "”")))
+          ) : h("p", { class: "small muted", style: "margin-top:6px" }, "Değişen maddelerde yeni bir risk bulunmadı."),
+          ch.engine_changed ? h("p", { class: "small muted", style: "margin-top:6px" }, "Not: önceki analiz farklı bir motorla yapılmıştı; skor farkının bir kısmı bundan kaynaklanabilir.") : null
+        ));
+      }
+      const sec = r.security;
+      if (sec.detected) {
         const items = [
-          ...s.hidden_suspicious.map((x) => ({ tag: "Gizli metin · " + (HIDDEN_REASON_TR[x.reason] || x.reason), text: x.text, where: "Modele gönderilmedi." })),
-          ...s.quarantined.map((x) => ({ tag: "Görünür metinde talimat", text: x.text, where: "Model görmeden önce metinden çıkarıldı." })),
-          ...s.model_reported.map((x) => ({ tag: "Model fark etti", text: x.quote, where: x.note_tr }))
+          ...sec.hidden_suspicious.map((x) => ({ tag: "Gizli metin · " + (HIDDEN_REASON_TR[x.reason] || x.reason), text: x.text, where: "Modele gönderilmedi." })),
+          ...sec.quarantined.map((x) => ({ tag: "Görünür metinde talimat", text: x.text, where: "Model görmeden önce metinden çıkarıldı." })),
+          ...sec.model_reported.map((x) => ({ tag: "Model fark etti", text: x.quote, where: x.note_tr }))
         ];
+        const li = (it) => h("li", { kp: "security-item" }, h("span", { class: "chip reason" }, it.tag), " ", h("span", { class: "muted" }, it.where), h("code", {}, clip(it.text, 220)));
         body.append(h(
           "section",
           { class: "card alert", kp: "security", "data-count": items.length },
           h("div", { class: "title" }, icon("alert"), "Sayfada yapay zekâya yönelik talimat bulundu"),
           h("p", { class: "small" }, "Bu sayfa, okuyan bir yapay zekâyı yönlendirmeye çalışan metin içeriyor. Aşağıdakiler modele hiç gönderilmedi ya da model görmeden metinden çıkarıldı. Sayfaya güvenirken dikkatli olun."),
-          h("p", { class: "small", style: "margin-top:6px;font-weight:600" }, [
-            s.hidden_suspicious.length ? `${s.hidden_suspicious.length} gizli metin (modele hiç gönderilmedi)` : null,
-            s.quarantined.length ? `${s.quarantined.length} görünür cümle (model görmeden çıkarıldı)` : null,
-            s.model_reported.length ? `${s.model_reported.length} modelin kendisinin fark ettiği` : null
+          h("p", { class: "small", style: "margin-top:6px;font-weight:650" }, [
+            sec.hidden_suspicious.length ? `${sec.hidden_suspicious.length} gizli metin (modele hiç gönderilmedi)` : null,
+            sec.quarantined.length ? `${sec.quarantined.length} görünür cümle (model görmeden çıkarıldı)` : null,
+            sec.model_reported.length ? `${sec.model_reported.length} modelin kendisinin fark ettiği` : null
           ].filter(Boolean).join(" · ")),
-          h("ul", {}, items.slice(0, 4).map((it) => h("li", { kp: "security-item" }, h("span", { class: "chip reason" }, it.tag), " ", h("span", { class: "muted" }, it.where), h("code", {}, clip(it.text, 220))))),
-          items.length > 4 ? h(
-            "details",
-            { class: "small", style: "margin-top:8px" },
-            h("summary", { style: "cursor:pointer" }, `${items.length - 4} tane daha`),
-            h("ul", {}, items.slice(4).map((it) => h("li", { kp: "security-item" }, h("span", { class: "chip reason" }, it.tag), " ", h("span", { class: "muted" }, it.where), h("code", {}, clip(it.text, 220)))))
-          ) : null
+          h("ul", {}, items.slice(0, 3).map(li)),
+          items.length > 3 ? h("details", { class: "small", style: "margin-top:8px" }, h("summary", { style: "cursor:pointer" }, `${items.length - 3} tane daha`), h("ul", {}, items.slice(3).map(li))) : null
         ));
-      } else if (s.hidden_removed) {
-        body.append(h("p", { class: "muted small", kp: "hidden-note" }, `Sayfadaki ${fmt(s.hidden_removed)} görünmeyen metin parçası analize alınmadı (talimat içermiyordu).`));
+      } else if (sec.hidden_removed) {
+        body.append(h("p", { class: "muted small", kp: "hidden-note" }, `Sayfadaki ${fmt(sec.hidden_removed)} görünmeyen metin parçası analize alınmadı (talimat içermiyordu).`));
       }
-      if (r.summary_tr) body.append(h("p", { kp: "summary" }, r.summary_tr));
-      body.append(h("h2", {}, `Riskli maddeler (${r.findings.length})`));
-      if (!r.findings.length) body.append(h("p", { class: "card muted small", kp: "no-findings" }, "Alıntıyla desteklenen riskli bir madde bulunamadı. Bu, metnin risksiz olduğu anlamına gelmez."));
-      for (const f of r.findings) body.append(findingCard(f));
+      const st = cellStates(r);
+      body.append(h("h2", {}, "Risk haritası"));
+      body.append(h(
+        "section",
+        { class: "card", kp: "risk-map" },
+        h("div", { class: "map" }, Object.keys(CATEGORIES).map((cat) => {
+          const state2 = st[cat] || "none";
+          return h(
+            "button",
+            {
+              class: "cell",
+              type: "button",
+              kp: "map-cell",
+              "data-category": cat,
+              "data-state": state2,
+              title: CATEGORIES[cat].tr + (state2 === "none" ? ": bulgu yok" : state2 === "check" ? ": kontrol edin" : `: ${SEVERITY_TR[state2].toLowerCase()} risk`),
+              onclick: () => state2 === "none" ? null : flash(shadow.querySelector(`[data-kp="finding"][data-category="${cat}"]`) || shadow.querySelector(`[data-kp="uncertain-item"][data-category="${cat}"]`))
+            },
+            icon(cat),
+            SHORT_TR[cat]
+          );
+        })),
+        h(
+          "div",
+          { class: "legend" },
+          h("span", {}, h("i", { style: "background:var(--hi-bg);border:1px solid var(--hi)" }), "yüksek"),
+          h("span", {}, h("i", { style: "background:var(--me-bg);border:1px solid var(--me)" }), "orta"),
+          h("span", {}, h("i", { style: "background:var(--lo-bg);border:1px solid var(--lo)" }), "düşük"),
+          h("span", {}, h("i", { style: "border:1.5px dashed var(--warn)" }), "kontrol edin"),
+          h("span", {}, h("i", { style: "border:1px solid var(--line)" }), "bulunmadı")
+        )
+      ));
+      if (r.summary_tr) body.append(h("section", { class: "card summary", kp: "summary" }, r.summary_tr));
+      body.append(h("h2", {}, "Riskli maddeler", h("span", { class: "n" }, String(r.findings.length))));
+      if (!r.findings.length) body.append(h("p", { class: "card muted small", kp: "no-findings" }, 'Alıntıyla desteklenen riskli bir madde bulunamadı. Bu, metnin risksiz olduğu anlamına gelmez; "Emin olamadıklarımız" bölümüne de bakın.'));
+      for (const f of r.findings) body.append(findingCard(f, newIds.has(findingId(f))));
       if (r.uncertain.length) {
         body.append(h(
           "section",
@@ -727,7 +1184,7 @@ footer { padding: 10px 16px; border-top: 1px solid #e6e2d8; background: #f4f1ea;
           h("p", { class: "small muted" }, "Bu maddeler skora katılmadı. Sistem burada karar vermiyor; kendiniz bakmanız gerekiyor."),
           h("ul", {}, r.uncertain.map((u) => h(
             "li",
-            { kp: "uncertain-item", "data-kind": u.kind },
+            { kp: "uncertain-item", "data-kind": u.kind, "data-category": u.category || null },
             h("b", {}, UNCERTAIN_LABEL[u.kind] || "Belirsiz"),
             u.text_tr,
             u.quote ? h("blockquote", {}, "“" + clip(u.quote, 220) + "”") : null,
@@ -745,30 +1202,61 @@ footer { padding: 10px 16px; border-top: 1px solid #e6e2d8; background: #f4f1ea;
         ));
       }
       footer.append(
-        h("span", {}, `Rapor v${r.version} · istem ${en.prompt_version}`),
+        h("span", {}, `v${r.version} · istem ${en.prompt_version}`),
         h(
           "span",
           { class: "row" },
-          h("button", { class: "btn", kp: "copy-json", type: "button", onclick: (ev) => copyJSON(ev.currentTarget, r) }, "JSON"),
-          h("button", { class: "btn", kp: "reanalyze", type: "button", onclick: () => onAnalyze?.({}) }, "Yeniden analiz")
+          h("button", { class: "btn", kp: "export", type: "button", title: "Raporu HTML dosyası olarak indir", onclick: (ev) => {
+            downloadReport(r, doc);
+            ev.currentTarget.lastChild.textContent = "İndirildi";
+          } }, icon("download"), "Rapor"),
+          h("button", { class: "btn", kp: "copy-json", type: "button", title: "Raporu JSON olarak kopyala", onclick: (ev) => copyJSON(ev.currentTarget, r) }, icon("braces"), "JSON"),
+          h("button", { class: "btn", kp: "reanalyze", type: "button", title: "Yeniden analiz et", onclick: () => onAnalyze?.({}) }, icon("refresh"))
         )
       );
     }
-    function findingCard(f) {
+    function findingCard(f, isNew) {
       const badge = f.source === "rule" ? h("span", { class: "badge rule" }, "Kural eşleşmesi") : f.corroborated ? h("span", { class: "badge ok", title: "Bağımsız anahtar kelime kuralları da aynı maddede aynı riski buldu." }, icon("check"), "Kural ile de doğrulandı") : h("span", { class: "badge solo", title: "Bu bulguyu yalnızca model buldu; alıntısı doğrulandı." }, "Yalnızca model");
-      const ev = f.evidence;
+      const ev = f.evidence, g = GUIDANCE[f.category];
+      const guide = g ? h(
+        "div",
+        { class: "guide", kp: "guidance" },
+        h("b", {}, "Ne yapabilirsiniz?"),
+        h("p", {}, g.tip_tr),
+        g.laws.length ? [h("b", { style: "margin-top:8px" }, "İlgili mevzuat"), h("ul", {}, g.laws.map((l) => h("li", {}, h("a", { href: l.url, target: "_blank", rel: "noopener noreferrer" }, l.label))))] : null,
+        h("p", { class: "note" }, GUIDANCE_NOTE_TR)
+      ) : null;
       return h(
         "article",
-        { class: "card finding", kp: "finding", "data-category": f.category, "data-severity": f.severity, "data-source": f.source },
-        h("div", { class: "row" }, h("span", { class: "chip", "data-sev": f.severity }, SEVERITY_TR[f.severity]), h("span", { class: "cat" }, f.category_tr)),
+        { class: "card finding", kp: "finding", "data-category": f.category, "data-severity": f.severity, "data-source": f.source, "data-new": isNew ? "true" : null },
+        h(
+          "div",
+          { class: "fhead" },
+          h("span", { class: "ficon" }, icon(f.category)),
+          h(
+            "div",
+            { style: "flex:1" },
+            h("div", { class: "cat" }, f.category_tr),
+            h("div", { class: "row", style: "margin-top:3px;gap:6px" }, h("span", { class: "chip", "data-sev": f.severity }, SEVERITY_TR[f.severity]), isNew ? h("span", { class: "chip new", kp: "new-badge" }, "YENİ") : null)
+          )
+        ),
         f.explanation_tr ? h("p", {}, f.explanation_tr) : null,
         h("blockquote", { kp: "quote" }, ev.heading ? h("span", { class: "where" }, ev.heading) : null, "“" + ev.quote + "”"),
         h(
           "div",
           { class: "meta" },
           h("span", { class: "row" }, badge, f.source === "model" ? h("span", {}, `· güven %${Math.round(f.confidence * 100)}`) : null),
-          h("button", { class: "btn link", kp: "show-in-page", type: "button", onclick: (e) => showQuote(e.currentTarget, ev.quote) }, icon("search"), "Metinde göster")
-        )
+          h(
+            "span",
+            { class: "acts" },
+            g ? h("button", { class: "btn link", kp: "guidance-toggle", type: "button", onclick: (e) => {
+              guide.classList.toggle("open");
+              e.currentTarget.lastChild.textContent = guide.classList.contains("open") ? "Gizle" : "Haklarınız";
+            } }, icon("book"), "Haklarınız") : null,
+            h("button", { class: "btn link", kp: "show-in-page", type: "button", onclick: (e) => showQuote(e.currentTarget, ev.quote) }, icon("search"), "Metinde göster")
+          )
+        ),
+        guide
       );
     }
     function showQuote(btn, quote) {
@@ -779,20 +1267,17 @@ footer { padding: 10px 16px; border-top: 1px solid #e6e2d8; background: #f4f1ea;
       }
     }
     async function copyJSON(btn, report) {
+      const label = btn.lastChild;
       try {
         await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
-        btn.textContent = "Kopyalandı";
+        label.textContent = "Kopyalandı";
       } catch {
-        btn.textContent = "Kopyalanamadı";
+        label.textContent = "Kopyalanamadı";
       }
       setTimeout(() => {
-        btn.textContent = "JSON";
+        label.textContent = "JSON";
       }, 1500);
     }
-    const clip = (s, n) => {
-      s = String(s || "");
-      return s.length > n ? s.slice(0, n - 1) + "…" : s;
-    };
     (doc.documentElement || doc.body).appendChild(host);
     render();
     return { host, shadow, open, close, isOpen, toggle: () => isOpen() ? close() : open(), showPill, setState, setStage, get state() {
@@ -805,7 +1290,7 @@ footer { padding: 10px 16px; border-top: 1px solid #e6e2d8; background: #f4f1ea;
   function start(transport, { win = window, doc = document, allowFrame = false } = {}) {
     if (!allowFrame && win.top !== win || win.__kpStarted) return null;
     win.__kpStarted = true;
-    let panel = null, detection = null, busy = false, lastUrl = win.location.href;
+    let panel = null, detection = null, busy = false, lastUrl = win.location.href, lastSelection = null, lastMode = "page";
     function detect() {
       const text = (doc.body?.innerText || "").slice(0, 3e5);
       const d = detectLegal({ url: win.location.href, title: doc.title, text });
@@ -816,24 +1301,41 @@ footer { padding: 10px 16px; border-top: 1px solid #e6e2d8; background: #f4f1ea;
       if (panel) return panel;
       panel = createPanel({
         doc,
-        onAnalyze: (opts) => run(opts),
+        onAnalyze: (opts) => {
+          if (opts?.page) lastMode = "page";
+          return run(opts);
+        },
         onOpenOptions: () => transport.openOptions(),
         onShowQuote: (q) => showQuoteInPage(q, doc),
         onClose: () => clearHighlight()
       });
       return panel;
     }
-    async function run({ rulesOnly = false } = {}) {
+    function captureSelection() {
+      const text = String(win.getSelection?.() || "").trim();
+      if (text.length < 80) return null;
+      const blocks = text.split(/\n\s*\n|\n/).map((t) => t.replace(/\s+/g, " ").trim()).filter((t) => t.length > 2).map((t) => ({ text: t, tag: "p" }));
+      const loc = win.location;
+      return { blocks, hidden: [], meta: { title: doc.title || "", url: loc.href, host: loc.host, lang: doc.documentElement.lang || "", selection: true } };
+    }
+    async function run({ rulesOnly = false, selection = false } = {}) {
       if (busy) return;
       busy = true;
+      if (selection) lastSelection = captureSelection();
+      const useSelection = selection || lastMode === "selection" && lastSelection;
       ensurePanel().open();
       panel.setState({ name: "loading", stage: "capture" });
       clearHighlight();
       try {
         await nextFrame();
-        const cap = capturePage({ doc, win });
+        const cap = useSelection ? lastSelection : capturePage({ doc, win });
+        if (useSelection && !cap) {
+          panel.setState({ name: "error", error: { code: "EMPTY_SELECTION", message: 'Önce analiz etmek istediğiniz sözleşme metnini fareyle seçin (en az birkaç cümle), sonra sağ tıklayıp "Küçük Punto ile seçili metni analiz et"i seçin.' } });
+          return;
+        }
+        lastMode = useSelection ? "selection" : "page";
         if (!cap.blocks.length) {
-          panel.setState({ name: "error", error: { code: "EMPTY", message: "Sayfada okunabilir görünür metin bulunamadı." } });
+          panel.setState({ name: "error", error: { code: "EMPTY", message: 'Sayfada okunabilir görünür metin bulunamadı. Metni seçip sağ tıklayarak "Küçük Punto ile seçili metni analiz et"i deneyin.' } });
           return;
         }
         const res = await transport.analyze({ blocks: cap.blocks, hidden: cap.hidden, meta: cap.meta, rulesOnly }, (stage) => panel.setStage(stage));
@@ -857,6 +1359,10 @@ footer { padding: 10px 16px; border-top: 1px solid #e6e2d8; background: #f4f1ea;
         if (status?.autoAnalyze && status?.configured) run();
       }
     }
+    transport.onSelection?.(() => {
+      lastMode = "page";
+      run({ selection: true });
+    });
     transport.onToggle(() => {
       ensurePanel();
       if (!detection) detect();
@@ -912,6 +1418,11 @@ footer { padding: 10px 16px; border-top: 1px solid #e6e2d8; background: #f4f1ea;
     onToggle(cb) {
       chrome.runtime.onMessage.addListener((msg) => {
         if (msg?.type === "kp:toggle") cb();
+      });
+    },
+    onSelection(cb) {
+      chrome.runtime.onMessage.addListener((msg) => {
+        if (msg?.type === "kp:analyzeSelection") cb();
       });
     }
   };

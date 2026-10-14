@@ -62,7 +62,7 @@ async function analyzeOn(page, url, { viaToolbar = false } = {}) {
   await shadow(page).locator('[data-kp=analyze]').click();
   await shadow(page).locator('[data-kp=score], [data-kp=error]').first().waitFor({ timeout: 30000 });
 }
-const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, name + '.png') }); };
+const shot = async (page, name, opts = {}) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, name + '.png'), ...opts }); };
 
 console.log(`extension ${extId} · mock ${MOCK_URL} · site ${SITE}`);
 
@@ -122,6 +122,35 @@ await step('"Metinde göster" highlights the quote in the page', async () => {
   await shot(page, 'netflix-highlight');
 });
 
+await step('risk map: 14 categories, coloured exactly where a finding exists; "Haklarınız" shows static law links', async () => {
+  const cells = shadow(page).locator('[data-kp=map-cell]');
+  assert.equal(await cells.count(), 14);
+  const lit = await cells.evaluateAll(els => els.filter(e => ['high', 'medium', 'low'].includes(e.dataset.state)).map(e => e.dataset.category).sort());
+  const cats = [...new Set(await shadow(page).locator('[data-kp=finding]').evaluateAll(els => els.map(e => e.dataset.category)))].sort();
+  assert.deepEqual(lit, cats);
+  await shadow(page).locator(`[data-kp=map-cell][data-category=${cats[0]}]`).click();
+  const card = shadow(page).locator(`[data-kp=finding][data-category=${cats[0]}]`).first();
+  await card.locator('[data-kp=guidance-toggle]').click();
+  const g = card.locator('[data-kp=guidance]');
+  assert.ok(await g.isVisible());
+  assert.match(await g.textContent(), /hukuki tavsiye değildir/i);
+  const hrefs = await g.locator('a').evaluateAll(as => as.map(a => a.href));
+  for (const hr of hrefs) assert.match(hr, /^https:\/\/www\.mevzuat\.gov\.tr\//);
+  await shot(page, 'netflix-guidance');
+});
+
+await step('"Rapor" downloads a standalone HTML file: quotes as text, no scripts, CSP that blocks everything', async () => {
+  const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 10000 }), shadow(page).locator('[data-kp=export]').click()]);
+  assert.match(dl.suggestedFilename(), /^kucuk-punto-127\.0\.0\.1-\d+-\d{4}-\d{2}-\d{2}\.html$/);
+  const html = fs.readFileSync(await dl.path(), 'utf8');
+  assert.match(html, /Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"/);
+  assert.match(html, /Hukuki tavsiye değildir/);
+  assert.ok(!/<script/i.test(html), 'no script tag');
+  const first = (await shadow(page).locator('[data-kp=finding] [data-kp=quote]').first().textContent());
+  const q = first.slice(first.indexOf('“') + 1, first.lastIndexOf('”')).slice(0, 60).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  assert.ok(html.includes(q), 'first quote is in the file');
+});
+
 await step('injection page: hidden instructions never reach the model, visible one is quarantined', async () => {
   const p = await ctx.newPage();
   await analyzeOn(p, `${SITE}/streambox-abonelik.html`);
@@ -135,6 +164,76 @@ await step('injection page: hidden instructions never reach the model, visible o
   assert.ok(Number(await shadow(p).locator('[data-kp=score]').getAttribute('data-score')) >= 60);
   await shot(p, 'streambox-security');
   await p.close();
+});
+
+await step('change tracking: the updated contract shows what changed, decided by the text', async () => {
+  const p = await ctx.newPage();
+  await analyzeOn(p, `${SITE}/streambox-abonelik-v2.html`);
+  const ch = shadow(p).locator('[data-kp=changes]');
+  assert.equal(await ch.getAttribute('data-status'), 'changed');
+  const added = (await shadow(p).locator('[data-kp=change-added]').allTextContents()).join(' | ');
+  assert.match(added, /30 gün/);
+  assert.match(added, /14 gün/);
+  // the mock model stops at 9 findings, so the AI-training clause is caught by the rules only:
+  // it is still listed among the changes, as "check this" rather than as a confirmed risk
+  const checks = (await shadow(p).locator('[data-kp=change-check]').allTextContents()).join(' | ');
+  assert.match(added + checks, /Yapay zekâ eğitimi/);
+  assert.match((await shadow(p).locator('[data-kp=change-removed]').allTextContents()).join(' | '), /7 gün/);
+  assert.equal(await shadow(p).locator('[data-kp=finding][data-category=auto_renewal]').getAttribute('data-new'), 'true');
+  const flags = await shadow(p).locator('[data-kp=finding]').evaluateAll(els => els.map(e => [e.dataset.category, e.dataset.new || '']));
+  assert.deepEqual(flags.filter(f => f[1] === 'true').map(f => f[0]).sort(), ['auto_renewal', 'cancellation_refund'], 'only findings in changed clauses are new');
+  assert.ok(flags.filter(f => !f[1]).length >= 4, 'findings in unchanged clauses are not marked new');
+  await shot(p, 'streambox-changes');
+  // the same page again: unchanged
+  await analyzeOn(p, `${SITE}/streambox-abonelik-v2.html?utm_source=x`);
+  assert.equal(await shadow(p).locator('[data-kp=changes]').getAttribute('data-status'), 'same');
+  await p.close();
+});
+
+await step('options page lists the analysis history (fingerprints only) and can clear it', async () => {
+  const p = await ctx.newPage();
+  await p.goto(`chrome-extension://${extId}/options.html`);
+  await p.locator('[data-kp=history-row]').first().waitFor({ timeout: 5000 });
+  assert.ok(await p.locator('[data-kp=history-row]').count() >= 2);
+  const stored = JSON.stringify(await sw.evaluate(() => chrome.storage.local.get('kp_history')));
+  assert.ok(!stored.includes('Taraflar ve kapsam'), 'contract text is not stored');
+  await p.locator('[data-kp=history-section]').scrollIntoViewIfNeeded();
+  await shot(p, 'options-history');
+  await p.click('[data-kp=clear-history]');
+  await p.locator('[data-kp=history-row]').first().waitFor({ state: 'detached', timeout: 5000 });
+  assert.deepEqual(await sw.evaluate(() => chrome.storage.local.get('kp_history')), {});
+  await p.close();
+});
+
+await step('right-click "analyse selected text" works where page capture is not wanted', async () => {
+  const p = await ctx.newPage();
+  await p.goto(`${SITE}/netflix-tos.html`);
+  await p.waitForTimeout(400);
+  await p.evaluate(() => {
+    const ps = [...document.querySelectorAll('main p, article p, p')].slice(0, 12);
+    const r = document.createRange(); r.setStartBefore(ps[0]); r.setEndAfter(ps[ps.length - 1]);
+    getSelection().removeAllRanges(); getSelection().addRange(r);
+  });
+  const tabId = await activeTabId();
+  await sw.evaluate((id) => chrome.tabs.sendMessage(id, { type: 'kp:analyzeSelection' }), tabId);
+  await shadow(p).locator('[data-kp=score]').waitFor({ timeout: 20000 });
+  const kinds = await shadow(p).locator('[data-kp=uncertain-item]').evaluateAll(els => els.map(e => e.dataset.kind));
+  assert.ok(kinds.includes('selection'), 'says only the selection was read: ' + kinds);
+  assert.equal(await shadow(p).locator('[data-kp=changes]').count(), 0, 'a selection is not a document version');
+  await p.close();
+});
+
+await step('real-world layouts (dark page, font-size:0 wrapper, inner scroll, content-visibility) are read', async () => {
+  for (const name of ['normal', 'dark-backdrop', 'fontsize-zero', 'inner-scroll', 'content-visibility']) {
+    const p = await ctx.newPage();
+    await analyzeOn(p, `${SITE}/test/${name}.html`, { viaToolbar: true });
+    const n = await shadow(p).locator('[data-kp=finding]').count();
+    assert.ok(n >= 3, `${name}: ${n} findings`);
+    const kinds = await shadow(p).locator('[data-kp=uncertain-item]').evaluateAll(els => els.map(e => e.dataset.kind));
+    assert.ok(!kinds.includes('layout_suspect') && !kinds.includes('hidden_content'), `${name}: ${kinds}`);
+    if (name === 'dark-backdrop') await shot(p, 'dark-page');
+    await p.close();
+  }
 });
 
 await step('HTML inside a quote is shown as text, never executed; attribute tricks do not hide clauses', async () => {

@@ -8,8 +8,8 @@
 </head>
 <body>
 <main>
-  <header>
-    <img src="icons/icon-48.png" alt="" width="40" height="40">
+  <header class="hero">
+    <img src="icons/icon-48.png" alt="" width="44" height="44">
     <div>
       <h1>Küçük Punto</h1>
       <p class="muted">Kullanım koşulları, gizlilik politikası ve abonelik şartları için kanıta dayalı risk raporu</p>
@@ -47,6 +47,23 @@
       </div>
       <div id="status" data-kp="status" role="status" aria-live="polite"></div>
     </form>
+  </section>
+
+  <section data-kp="history-section">
+    <h2>Analiz geçmişi</h2>
+    <p class="muted">Aynı sözleşmeyi tekrar analiz ettiğinizde neyin değiştiğini göstermek için her sözleşmenin yalnızca <b>parmak izi</b> (metnin özeti), skoru ve bulunan maddeler bu tarayıcıda saklanır. Sözleşme metninin kendisi saklanmaz, hiçbir yere gönderilmez.</p>
+    <div id="history" data-kp="history"></div>
+    <div class="buttons" style="margin-top:12px">
+      <button type="button" id="clearHistory" class="danger" data-kp="clear-history">Geçmişi temizle</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Kısayollar</h2>
+    <ul>
+      <li><kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>K</kbd>: Küçük Punto panelini aç / kapat.</li>
+      <li>Bir sayfada metni seçip sağ tıklayın → <b>Küçük Punto ile seçili metni analiz et</b>: sayfa düzgün okunamadığında yalnızca seçtiğiniz bölüm incelenir.</li>
+    </ul>
   </section>
 
   <section>

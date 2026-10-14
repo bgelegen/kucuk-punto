@@ -20,5 +20,6 @@ export const extensionTransport = {
   },
   status: () => chrome.runtime.sendMessage({ type: 'kp:status' }),
   openOptions: () => chrome.runtime.sendMessage({ type: 'kp:openOptions' }),
-  onToggle(cb) { chrome.runtime.onMessage.addListener(msg => { if (msg?.type === 'kp:toggle') cb(); }); }
+  onToggle(cb) { chrome.runtime.onMessage.addListener(msg => { if (msg?.type === 'kp:toggle') cb(); }); },
+  onSelection(cb) { chrome.runtime.onMessage.addListener(msg => { if (msg?.type === 'kp:analyzeSelection') cb(); }); }
 };

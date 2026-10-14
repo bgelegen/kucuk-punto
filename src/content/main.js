@@ -16,7 +16,7 @@ export function start(transport, { win = window, doc = document, allowFrame = fa
   if ((!allowFrame && win.top !== win) || win.__kpStarted) return null;
   win.__kpStarted = true;
 
-  let panel = null, detection = null, busy = false, lastUrl = win.location.href;
+  let panel = null, detection = null, busy = false, lastUrl = win.location.href, lastSelection = null, lastMode = 'page';
 
   function detect() {
     const text = (doc.body?.innerText || '').slice(0, 300000);
@@ -29,7 +29,7 @@ export function start(transport, { win = window, doc = document, allowFrame = fa
     if (panel) return panel;
     panel = createPanel({
       doc,
-      onAnalyze: (opts) => run(opts),
+      onAnalyze: (opts) => { if (opts?.page) lastMode = 'page'; return run(opts); },
       onOpenOptions: () => transport.openOptions(),
       onShowQuote: (q) => showQuoteInPage(q, doc),
       onClose: () => clearHighlight()
@@ -37,16 +37,29 @@ export function start(transport, { win = window, doc = document, allowFrame = fa
     return panel;
   }
 
-  async function run({ rulesOnly = false } = {}) {
+  // the user's own selection: the fallback when a page's layout cannot be read automatically
+  function captureSelection() {
+    const text = String(win.getSelection?.() || '').trim();
+    if (text.length < 80) return null;
+    const blocks = text.split(/\n\s*\n|\n/).map(t => t.replace(/\s+/g, ' ').trim()).filter(t => t.length > 2).map(t => ({ text: t, tag: 'p' }));
+    const loc = win.location;
+    return { blocks, hidden: [], meta: { title: doc.title || '', url: loc.href, host: loc.host, lang: doc.documentElement.lang || '', selection: true } };
+  }
+
+  async function run({ rulesOnly = false, selection = false } = {}) {
     if (busy) return;
     busy = true;
+    if (selection) lastSelection = captureSelection();
+    const useSelection = selection || (lastMode === 'selection' && lastSelection);
     ensurePanel().open();
     panel.setState({ name: 'loading', stage: 'capture' });
     clearHighlight();
     try {
       await nextFrame();
-      const cap = capturePage({ doc, win });
-      if (!cap.blocks.length) { panel.setState({ name: 'error', error: { code: 'EMPTY', message: 'Sayfada okunabilir görünür metin bulunamadı.' } }); return; }
+      const cap = useSelection ? lastSelection : capturePage({ doc, win });
+      if (useSelection && !cap) { panel.setState({ name: 'error', error: { code: 'EMPTY_SELECTION', message: 'Önce analiz etmek istediğiniz sözleşme metnini fareyle seçin (en az birkaç cümle), sonra sağ tıklayıp "Küçük Punto ile seçili metni analiz et"i seçin.' } }); return; }
+      lastMode = useSelection ? 'selection' : 'page';
+      if (!cap.blocks.length) { panel.setState({ name: 'error', error: { code: 'EMPTY', message: 'Sayfada okunabilir görünür metin bulunamadı. Metni seçip sağ tıklayarak "Küçük Punto ile seçili metni analiz et"i deneyin.' } }); return; }
       const res = await transport.analyze({ blocks: cap.blocks, hidden: cap.hidden, meta: cap.meta, rulesOnly }, stage => panel.setStage(stage));
       if (res && res.ok) panel.setState({ name: 'report', report: res.report });
       else panel.setState({ name: 'error', error: res?.error || { code: 'UNKNOWN', message: 'Bilinmeyen hata.' } });
@@ -64,6 +77,8 @@ export function start(transport, { win = window, doc = document, allowFrame = fa
       if (status?.autoAnalyze && status?.configured) run();
     }
   }
+
+  transport.onSelection?.(() => { lastMode = 'page'; run({ selection: true }); });
 
   transport.onToggle(() => {
     ensurePanel();

@@ -18,5 +18,6 @@ export const harnessTransport = {
   onToggle(cb) {
     window.addEventListener('keydown', e => { if (e.altKey && (e.key === 'k' || e.key === 'K')) cb(); });
     window.__kpToggle = cb;
-  }
+  },
+  onSelection(cb) { window.__kpAnalyzeSelection = cb; }
 };

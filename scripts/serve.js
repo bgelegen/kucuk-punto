@@ -38,6 +38,10 @@ export async function startHarness({ port = Number(process.env.KP_PORT || 5173),
   const mode = mockMode || process.env.KP_MOCK_MODE || 'helpful';
   const engine = useMock ? `mock (${MOCK_MODEL}:${mode})` : `${resolveLLMConfig(settings).provider} · ${resolveLLMConfig(settings).model}`;
 
+  // change tracking in the harness: same handler, in-memory store
+  const store = new Map();
+  const history = { get: async k => store.get(k) || null, set: async (k, v) => { store.set(k, v); } };
+
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
     try {
@@ -48,7 +52,7 @@ export async function startHarness({ port = Number(process.env.KP_PORT || 5173),
         const body = await readBody(req, 4_000_000);
         const t0 = Date.now();
         const result = await handleAnalyze(JSON.parse(body), {
-          settings, randomBytes: n => crypto.randomBytes(n), retry: { retries: 3, maxWaitMs: 45000 },
+          settings, randomBytes: n => crypto.randomBytes(n), retry: { retries: 3, maxWaitMs: 45000 }, history,
           llmOverride: useMock ? { llm: mockLLM(mode), provider: 'mock', model: `${MOCK_MODEL}:${mode}` } : null
         });
         if (result.ok && result.report.engine.error) {

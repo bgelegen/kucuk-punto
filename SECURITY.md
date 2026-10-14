@@ -36,9 +36,11 @@ Sayfadaki her şey **veri**dir: görünür metin, gizli metin, öznitelikler, yo
 8. **Gösterim (K8)** · `src/content/panel.js`
    - Tüm veri `textContent` ve metin düğümleriyle eklenir. `scripts/build.js`, derlenen içerik betiğinde `innerHTML`, `insertAdjacentHTML` veya `document.write` varsa derlemeyi durdurur.
    - E2E testi `<img onerror>` içeren bir maddenin metin olarak gösterildiğini doğrular.
+   - "Haklarınız" bağlantıları yalnızca sabit tablodan gelir (mevzuat.gov.tr); sayfadan veya modelden gelen hiçbir adres bağlantıya dönüşmez.
+   - İndirilen rapor dosyası (`src/content/export.js`) `createHTMLDocument` ile DOM olarak kurulur ve `default-src 'none'; style-src 'unsafe-inline'` CSP'si taşır: dosya açıldığında hiçbir betik çalışmaz, hiçbir dış kaynak yüklenmez. E2E testi dosyada `<script` olmadığını doğrular.
 9. **Yetki (K9)**
    - Modelin hiçbir aracı yoktur.
-   - Eklenti izinleri: yalnızca `storage` ve sabit sağlayıcı adresleri. Özel adresler için izin, kullanıcı "Kaydet"e bastığında istenir (`optional_host_permissions`).
+   - Eklenti izinleri: yalnızca `storage`, `contextMenus` (sağ tık "seçili metni analiz et") ve sabit sağlayıcı adresleri. Özel adresler için izin, kullanıcı "Kaydet"e bastığında istenir (`optional_host_permissions`).
    - `tabs`, `scripting`, `cookies`, `history` izinleri yoktur. Uzaktan kod yüklenmez; CSP `script-src 'self'`.
 10. **Mesajlaşma**
     - Servis çalışanı yalnızca kendi içerik betiğinden gelen bağlantıları kabul eder (`sender.id` ve `sender.tab`).
@@ -52,6 +54,7 @@ Sayfadaki her şey **veri**dir: görünür metin, gizli metin, öznitelikler, yo
 - **Panel sayfanın içindedir:** Açık Shadow DOM kullanılır (otomatik testler için). Sayfa betiği paneli okuyabilir veya üstüne sahte bir panel çizebilir. Rozet bunun için var. Daha güçlü bir seçenek Chrome `sidePanel` API'sidir; bu gelecek çalışmadır.
 - **Gizlilik:** Görünür metin, seçilen sağlayıcıya gönderilir. Otomatik analiz varsayılan olarak kapalıdır; kullanıcı basmadan hiçbir şey gönderilmez.
 - **Anahtar saklama:** `chrome.storage.local` şifresizdir. Bilgisayara erişimi olan biri anahtarı okuyabilir.
+- **Analiz geçmişi:** Değişiklik takibi için sözleşme adresi, başlığı, skor, doğrulanmış alıntılar ve parmak izleri `chrome.storage.local` içinde durur (metnin kendisi değil). Bilgisayara erişimi olan biri hangi sözleşmelerin analiz edildiğini görebilir; ayarlardaki "Geçmişi temizle" hepsini siler. Bu kayıt servis çalışanında tutulur, sayfa ona erişemez.
 - **Kapsam dışı:** iframe, Shadow DOM ve PDF içindeki metin okunmaz.
 
 ## Bir açık bildirmek

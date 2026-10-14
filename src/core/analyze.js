@@ -13,6 +13,7 @@ import { parseModelJSON, validateResponse } from './schema.js';
 import { verifyFindings, REJECT_REASONS } from './verify.js';
 import { computeScore, MIN_CONFIDENCE } from './score.js';
 import { CATEGORIES, SEVERITY } from './taxonomy.js';
+import { clauseFingerprint } from './history.js';
 
 export const REPORT_VERSION = 1;
 export const DISCLAIMER_TR = 'Bu rapor hukuki tavsiye değildir. Yapay zekâ ve kurallarla üretilmiş otomatik bir özettir; sözleşmenin yerine geçmez ve hata içerebilir. Önemli kararlar için metnin tamamını okuyun ve gerekirse bir hukukçuya danışın.';
@@ -96,14 +97,14 @@ export async function analyze({ blocks, hidden = [], meta = {}, llm = null, opti
 
   // ---- uncertainty, said out loud
   const uncertain = [];
-  for (const f of lowConfidence) uncertain.push({ kind: 'low_confidence', category: f.category, quote: f.evidence.quote, clause_id: f.clause_id, text_tr: `Model bu maddeden emin değil (güven %${Math.round(f.confidence * 100)}); skora katılmadı.` });
+  for (const f of lowConfidence) uncertain.push({ kind: 'low_confidence', category: f.category, category_tr: CATEGORIES[f.category].tr, quote: f.evidence.quote, clause_id: f.clause_id, text_tr: `Model bu maddeden emin değil (güven %${Math.round(f.confidence * 100)}); skora katılmadı.` });
   if (modelOut) {
     const modelCats = new Set(findings.map(f => f.category));
     const seen = new Set();
     for (const r of rules) {
       if (modelCats.has(r.category) || seen.has(r.category)) continue;
       seen.add(r.category);
-      uncertain.push({ kind: 'rule_only', category: r.category, quote: r.quote, clause_id: r.clause_id, text_tr: `Kurallar "${CATEGORIES[r.category].tr}" ile ilgili bir ifade buldu ama model bunu risk olarak raporlamadı. Kendiniz kontrol edin.` });
+      uncertain.push({ kind: 'rule_only', category: r.category, category_tr: CATEGORIES[r.category].tr, quote: r.quote, clause_id: r.clause_id, text_tr: `Kurallar "${CATEGORIES[r.category].tr}" ile ilgili bir ifade buldu ama model bunu risk olarak raporlamadı. Kendiniz kontrol edin.` });
     }
     for (const u of modelOut.uncertainties) uncertain.push({ kind: 'model', text_tr: `${u.topic_tr}: ${u.reason_tr}` });
   }
@@ -113,6 +114,12 @@ export async function analyze({ blocks, hidden = [], meta = {}, llm = null, opti
   // a model that was steered (or simply wrong) tends to under-report; the rules cannot be steered
   const conflict = !!modelOut && rulesScore >= 50 && scored.score < rulesScore / 3;
   if (conflict) uncertain.push({ kind: 'model_rule_conflict', text_tr: `Model düşük risk bildirdi (skor ${scored.score}) ama anahtar kelime kuralları çok sayıda riskli ifade buldu (kural skoru ${rulesScore}). Bu tutarsızlık bir model hatası veya sayfadaki bir manipülasyon olabilir; maddeleri kendiniz kontrol edin.` });
+  // self-check: if most of the page's text was classified as invisible, the reader may have misjudged
+  // the layout (that is a bug signal, not an attack) - say so instead of reporting a confident low score
+  const visibleChars = blocks.reduce((a, b) => a + String(b.text || '').length, 0);
+  const hiddenChars = hiddenClassified.reduce((a, h) => a + h.text.length, 0);
+  if (hiddenChars > 2000 && hiddenChars > visibleChars) uncertain.push({ kind: 'layout_suspect', text_tr: `Sayfadaki metnin çoğu (${hiddenChars.toLocaleString('tr-TR')} karakter) görünmez olarak işaretlendi. Sayfanın düzeni doğru okunamamış olabilir. Sözleşme metnini seçip sağ tıklayın ve "Küçük Punto ile seçili metni analiz et"i kullanın.` });
+  if (meta.selection) uncertain.push({ kind: 'selection', text_tr: 'Yalnızca sayfada seçtiğiniz metin incelendi; sözleşmenin geri kalanı bu rapora dâhil değil.' });
   const benignHiddenChars = hiddenClassified.filter(h => !h.suspicious).reduce((a, h) => a + h.text.length, 0);
   if (benignHiddenChars >= 400) uncertain.push({ kind: 'hidden_content', text_tr: `Sayfada şu an görünmeyen yaklaşık ${benignHiddenChars.toLocaleString('tr-TR')} karakterlik metin var (kapalı bölüm, açılır menü vb.). Görmediğiniz metin analize alınmaz; önemli bir bölüm kapalıysa açıp yeniden analiz edin.` });
   if (!modelOut) uncertain.push({ kind: 'rules_only', text_tr: llmError ? `Model kullanılamadı (${llmError.message}). Aşağıdakiler yalnızca anahtar kelime kurallarının sonucudur ve yanlış alarm içerebilir.` : 'Model kullanılmadı. Aşağıdakiler yalnızca anahtar kelime kurallarının sonucudur ve yanlış alarm içerebilir.' });
@@ -128,10 +135,10 @@ export async function analyze({ blocks, hidden = [], meta = {}, llm = null, opti
 
   findings.sort((a, b) => SEVERITY[b.severity] - SEVERITY[a.severity] || (b.confidence - a.confidence));
   progress('done');
-  return {
+  const report = {
     version: REPORT_VERSION,
     disclaimer_tr: DISCLAIMER_TR,
-    meta: { title: meta.title || '', host: meta.host || '', analysed_at: new Date(t0).toISOString() },
+    meta: { title: meta.title || '', host: meta.host || '', analysed_at: new Date(t0).toISOString(), selection: !!meta.selection },
     document_type: modelOut ? modelOut.document_type : null,
     summary_tr: modelOut ? modelOut.summary_tr : '',
     score: scored.score, band: scored.band, band_tr: scored.band_tr, score_breakdown: scored.breakdown, rules_score: rulesScore,
@@ -148,4 +155,8 @@ export async function analyze({ blocks, hidden = [], meta = {}, llm = null, opti
     engine: { ...engine, error: llmError },
     trace: { ...trace, ms: now() - t0, rule_hits: rules.length }
   };
+  // clause id -> text fingerprint, for change tracking in the background. Non-enumerable, so it is not
+  // serialised into the report the page receives, the JSON copy or the downloaded file.
+  Object.defineProperty(report, 'clauseIndex', { value: Object.fromEntries(clauses.map(c => [c.id, clauseFingerprint(c.text)])), enumerable: false });
+  return report;
 }
