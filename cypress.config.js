@@ -3,6 +3,8 @@
 //
 //   npm run cy:run          -> cypress/videos/demo.cy.js.mp4
 //   KP_MOCK=1 in .env -> demo model, labelled "mock" on screen (no key needed)
+import fs from 'node:fs';
+import path from 'node:path';
 import { defineConfig } from 'cypress';
 import { startHarness } from './scripts/serve.js';
 
@@ -21,6 +23,16 @@ export default defineConfig({
     supportFile: false,
     includeShadowDom: true,
     async setupNodeEvents(on, config) {
+      // the newest report file the panel downloaded (null if the browser saved none)
+      on('task', {
+        readReportDownload() {
+          const dir = config.downloadsFolder;
+          if (!fs.existsSync(dir)) return null;
+          const files = fs.readdirSync(dir).filter(f => /^kucuk-punto-.*\.html$/.test(f))
+            .map(f => path.join(dir, f)).sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+          return files.length ? fs.readFileSync(files[0], 'utf8') : null;
+        }
+      });
       try { await startHarness({ port: PORT }); }
       catch (e) { if (e.code !== 'EADDRINUSE') throw e; console.log(`port ${PORT} zaten açık; mevcut sunucu kullanılıyor`); }
       return config;
