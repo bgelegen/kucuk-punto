@@ -18,6 +18,7 @@ import crypto from 'node:crypto';
 import { build } from './build.js';
 import { loadDotEnv, settingsFromEnv, ROOT, isMain } from './env.js';
 import { handleAnalyze, isConfigured, resolveLLMConfig } from '../src/background/handler.js';
+import { makeLLM } from '../src/core/llm.js';
 import { mockLLM, MOCK_MODEL } from './mock-llm.js';
 import { pickModel } from './pick-model.js';
 
@@ -50,11 +51,15 @@ export async function startHarness({ port = Number(process.env.KP_PORT || 5173),
       }
       if (url.pathname === '/__kp/analyze' && req.method === 'POST') {
         const body = await readBody(req, 4_000_000);
+        const payload = JSON.parse(body);
         const t0 = Date.now();
-        const result = await handleAnalyze(JSON.parse(body), {
+        // KP_RECORD=1: keep the real model's raw answers for the live demo (demo/recordings/<page>.json)
+        const rec = !useMock && process.env.KP_RECORD === '1' ? recorder(settings) : null;
+        const result = await handleAnalyze(payload, {
           settings, randomBytes: n => crypto.randomBytes(n), retry: { retries: 3, maxWaitMs: 45000 }, history,
-          llmOverride: useMock ? { llm: mockLLM(mode), provider: 'mock', model: `${MOCK_MODEL}:${mode}` } : null
+          llmOverride: useMock ? { llm: mockLLM(mode), provider: 'mock', model: `${MOCK_MODEL}:${mode}` } : rec ? rec.override : null
         });
+        if (rec && result.ok && !result.report.engine.error && !payload.meta?.selection) rec.save(payload.meta?.url, result.report, quiet);
         if (result.ok && result.report.engine.error) {
           try { fs.writeFileSync(path.join(ROOT, 'cypress', '.harness-error.json'), JSON.stringify({ code: result.report.engine.error.code, model: settings.model })); } catch { /* ignore */ }
         }
@@ -79,6 +84,27 @@ export async function startHarness({ port = Number(process.env.KP_PORT || 5173),
   const actual = server.address().port;
   if (!quiet) console.log(`Küçük Punto harness: http://127.0.0.1:${actual}/  ·  model: ${engine}`);
   return { server, port: actual, engine };
+}
+
+function recorder(settings) {
+  const cfg = resolveLLMConfig(settings);
+  const base = makeLLM(cfg, globalThis.fetch, { retry: { retries: 3, maxWaitMs: 45000 } });
+  const responses = [];
+  const llm = async (req) => { const r = await base(req); responses.push({ text: r.text }); return r; };
+  return {
+    override: { llm, provider: cfg.provider, model: cfg.model },
+    save(pageUrl, report, quiet) {
+      const page = (new URL(pageUrl || 'http://x/').pathname.split('/').pop() || '').replace(/\.html?$/, '');
+      if (!/^[a-z0-9-]+$/.test(page) || !responses.length) return;
+      const dir = path.join(ROOT, 'demo', 'recordings');
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, page + '.json'), JSON.stringify({
+        page, source: 'scripts/record-demo.js (harness, gerçek model)', provider: cfg.provider, model: cfg.model,
+        date: new Date().toISOString(), prompt_version: report.engine.prompt_version, responses
+      }, null, 2) + '\n');
+      if (!quiet) console.log(`  kaydedildi: demo/recordings/${page}.json`);
+    }
+  };
 }
 
 function send(res, status, type, data) { res.writeHead(status, { 'content-type': type, 'cache-control': 'no-store' }); res.end(data); }

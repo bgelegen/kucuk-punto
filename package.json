@@ -12,6 +12,7 @@
     "build": "node scripts/build.js",
     "test": "node --test tests/*.test.js",
     "test:e2e": "node tests/e2e-extension.mjs",
+    "test:web": "node tests/e2e-web.mjs",
     "eval": "node eval/run.js",
     "eval:injection": "node eval/injection.js",
     "eval:check-gold": "node eval/check-gold.js",

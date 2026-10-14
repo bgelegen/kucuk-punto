@@ -31,6 +31,7 @@ const provider = process.env.KP_PROVIDER || 'gemini';
 if (!process.env.KP_API_KEY) { console.log('\n  API anahtarı bulunamadı (.env).'); process.exit(3); }
 
 const VIDEO_ONLY = process.argv.includes('--video');
+const RECORD_ONLY = process.argv.includes('--record');   // demo-kaydi.bat: answers for the live demo
 const exhausted = [];
 let model = null;
 
@@ -40,7 +41,7 @@ async function choose() {
   let pick;
   for (let round = 0; ; round++) {
     console.log('\n  Model kontrol ediliyor...');
-    pick = await pickModel({ provider, apiKey: process.env.KP_API_KEY, baseUrl: process.env.KP_BASE_URL, model: process.env.KP_MODEL_FIXED, prefer: VIDEO_ONLY ? ['gemini-flash-lite-latest'] : [], exclude: exhausted, log: console.log });
+    pick = await pickModel({ provider, apiKey: process.env.KP_API_KEY, baseUrl: process.env.KP_BASE_URL, model: process.env.KP_MODEL_FIXED, prefer: VIDEO_ONLY || RECORD_ONLY ? ['gemini-flash-lite-latest'] : [], exclude: exhausted, log: console.log });
     if (pick.authError) { console.log('\n  Anahtar geçersiz görünüyor.'); process.exit(3); }
     for (const t of pick.tried) if (['QUOTA', 'MODEL'].includes(t.code) && !exhausted.includes(t.model)) exhausted.push(t.model);   // no point asking again today
     // "high demand" is temporary: wait a little instead of giving up
@@ -60,8 +61,9 @@ async function choose() {
 const steps = [
   ['6 sözleşme değerlendirmesi', ['eval/run.js', '--provider', provider]],
   ['Gizli talimat (prompt injection) testi', ['eval/injection.js', '--provider', provider]],
-  ['Cypress demo videosu', ['scripts/demo.js']]
-].filter(s => !VIDEO_ONLY || s[1][0] === 'scripts/demo.js');
+  ['Cypress demo videosu', ['scripts/demo.js']],
+  ['Canlı demo için model yanıtları', ['scripts/record-demo.js']]
+].filter(s => RECORD_ONLY ? s[1][0] === 'scripts/record-demo.js' : VIDEO_ONLY ? s[1][0] === 'scripts/demo.js' : s[1][0] !== 'scripts/record-demo.js');
 const results = [];
 for (const [name, args] of steps) {
   let status;

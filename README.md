@@ -6,6 +6,8 @@ Bir sözleşme sayfası açtığınızda eklenti sayfayı tanır. "Analiz et"e b
 
 > ⚖️ **Hukuki tavsiye değildir.** Küçük Punto otomatik bir okuma yardımıdır; hata yapabilir ve sözleşmenin yerine geçmez. Bu uyarı eklentinin her ekranında görünür.
 
+**🌐 Canlı demo: [bgelegen.github.io/kucuk-punto](https://bgelegen.github.io/kucuk-punto/)**: kurulum yapmadan, telefondan da denenebilir. Eklentiyi indirmek için: [`indir/kucuk-punto-eklenti.zip`](indir/kucuk-punto-eklenti.zip).
+
 | Rapor ve risk haritası | Sözleşme değişince | Haklarınız ve mevzuat |
 |---|---|---|
 | ![Netflix raporu](docs/screenshots/netflix-report.png) | ![Değişiklik takibi](docs/screenshots/streambox-changes.png) | ![Haklarınız](docs/screenshots/netflix-guidance.png) |
@@ -34,27 +36,24 @@ Bir sözleşme sayfası açtığınızda eklenti sayfayı tanır. "Analiz et"e b
 ## İçindekiler
 
 1. [Kurulum (5 dakika)](#kurulum)
-2. [Mimari ve veri akışı](#mimari-ve-veri-akışı)
-3. [Değişiklik takibi nasıl çalışır?](#değişiklik-takibi-nasıl-çalışır)
-4. [LLM çıktısı neden serbest metin değil?](#llm-çıktısı-neden-serbest-metin-değil)
-5. [Güvenlik ve prompt injection](#güvenlik-ve-prompt-injection)
-6. [page-agent ile ilişkisi](#page-agent-ile-ilişkisi)
-7. [Değerlendirme](#değerlendirme)
-8. [Testler ve demo videosu](#testler-ve-demo-videosu)
-9. [Mevzuat notları](#mevzuat-notları)
-10. [Sınırlılıklar](#sınırlılıklar)
+2. [Canlı demo nasıl çalışır?](#canlı-demo-nasıl-çalışır)
+3. [Mimari ve veri akışı](#mimari-ve-veri-akışı)
+4. [Değişiklik takibi nasıl çalışır?](#değişiklik-takibi-nasıl-çalışır)
+5. [LLM çıktısı neden serbest metin değil?](#llm-çıktısı-neden-serbest-metin-değil)
+6. [Güvenlik ve prompt injection](#güvenlik-ve-prompt-injection)
+7. [page-agent ile ilişkisi](#page-agent-ile-ilişkisi)
+8. [Değerlendirme](#değerlendirme)
+9. [Testler ve demo videosu](#testler-ve-demo-videosu)
+10. [Mevzuat notları](#mevzuat-notları)
+11. [Sınırlılıklar](#sınırlılıklar)
 
 ---
 
 ## Kurulum
 
-**1. Eklentiyi yükleyin.** Derlenmiş dosyalar depoda (`extension/dist`), derlemeniz gerekmez.
+**1. Eklentiyi yükleyin.** Derlenmiş dosyalar hazır, derlemeniz gerekmez. [`indir/kucuk-punto-eklenti.zip`](indir/kucuk-punto-eklenti.zip) dosyasını indirip bir klasöre çıkarın (ya da depoyu klonlayıp `extension` klasörünü kullanın).
 
-```bash
-git clone https://github.com/bgelegen/kucuk-punto.git
-```
-
-Chrome'da `chrome://extensions` → sağ üstte **Geliştirici modu** → **Paketlenmemiş öğe yükle** → `kucuk-punto/extension` klasörünü seçin.
+Chrome'da `chrome://extensions` → sağ üstte **Geliştirici modu** → **Paketlenmemiş öğe yükle** → çıkardığınız `kucuk-punto` klasörünü seçin.
 
 **2. Kendi model anahtarınızı girin.** İlk kurulumda ayarlar sayfası açılır.
 
@@ -88,6 +87,22 @@ npm run build        # src/ → extension/dist/
 npm test             # 33 birim testi
 cp .env.example .env # eval ve Cypress için: KP_API_KEY=...
 ```
+
+---
+
+## Canlı demo nasıl çalışır?
+
+[bgelegen.github.io/kucuk-punto](https://bgelegen.github.io/kucuk-punto/) GitHub Pages'ten, bu deponun kökünden yayınlanır (`index.html`, `demo/`, `indir/`). Bir sunucusu yoktur. Demo sayfalarında **eklentinin aynı içerik kodu ve aynı `handleAnalyze` işleyicisi** ziyaretçinin tarayıcısında çalışır (`src/web/`). Değişen tek şey, model yanıtının nereden geldiğidir; sayfanın üstündeki çubuk hangisinin kullanıldığını her an gösterir:
+
+| Mod | Model yanıtı | Tarayıcıda canlı çalışan |
+|---|---|---|
+| **Kayıtlı Gemini yanıtı** (örnekler için varsayılan) | O sayfa için `gemini-flash-lite-latest`'in verdiği gerçek yanıt, `demo/recordings/<sayfa>.json` dosyasından okunur. Raporda "kayıtlı yanıt" etiketi ve tarihi yazar | Görünür/gizli metin ayrımı, karantina, şema doğrulama, alıntı doğrulama, kural karşılaştırması, skor, değişiklik takibi, rapor dosyası |
+| **Kendi anahtarım** | Ziyaretçinin kendi Gemini anahtarı. Anahtar yalnızca o sekmede (`sessionStorage`) tutulur ve yalnızca Google'a gönderilir | Hepsi, model çağrısı dâhil |
+| **Yalnızca kurallar** | Model yok, rapor bunu açıkça yazar | Hepsi, model dışında |
+
+Neden kayıtlı yanıt? Herkese açık bir sayfaya proje sahibinin anahtarını koymak, anahtarın kopyalanıp kotanın başkaları tarafından tüketilmesi demektir; bu yüzden sitede hiçbir anahtar yoktur. Netflix yanıtı değerlendirme çalıştırmasından gelir (aynı metin, `eval/results/raw/`). StreamBox sayfalarının yanıtları `demo-kaydi.bat` (`node scripts/run-all.js --record`) ile, harness üzerinden gerçek modelle kaydedilir. Kaydı olmayan sayfada çubuk kendiliğinden "Yalnızca kurallar"a geçer.
+
+"Kendi metniniz" sayfasında yapıştırılan metin sayfaya düz paragraflar olarak yerleştirilir (`textContent`) ve sıradan bir web sayfası gibi analiz edilir. Bu metin geçmişe yazılmaz. `npm run test:web` bu sayfaların hepsini Pages'in sunduğu biçimde sunar ve dener: üç mod, v1 → v2 değişiklik takibi, anahtarın yalnızca Google'a gittiği, indirme paketinin geçerli olduğu ve tanıtım sayfasındaki her bağlantının açıldığı.
 
 ---
 
@@ -153,6 +168,9 @@ src/core/             ortamdan bağımsız boru hattı (analyze, schema, verify,
 src/content/          sayfa tarafı: tespit, yakalama, panel, vurgulama, iki taşıma katmanı
 src/background/       servis çalışanı + paylaşılan istek işleyici
 src/options/          ayarlar sayfası mantığı
+src/web/              canlı demo: tarayıcı içi taşıma katmanı, demo çubuğu, "kendi metniniz" sayfası
+index.html, demo/     GitHub Pages: tanıtım sayfası ve demo sayfaları (demo/ scripts/build-web.js ile üretilir)
+indir/                kurulmaya hazır eklenti paketi (zip)
 eval/                 korpus, altın standart, eşleştirici, run.js, injection.js → EVAL.md
 site/                 demo/test sayfaları (gerçek Netflix metni, kurgusal StreamBox injection sayfası ve güncellenmiş hâli,
                       test/: gerçek sitelerdeki zor düzenler)
@@ -270,6 +288,7 @@ Modelin 36 iddiasından 35'inin alıntısı metinde birebir bulundu; reddedilen 
 |---|---|
 | `npm test` | 33 birim testi: normalizasyon, parçalama, alıntı doğrulama (paragraf bölünmesini aşan alıntı dâhil), şema, skor, karantina (TR/EN, yanlış pozitif), onarım turu, çelişki durumu, nonce, yük sınırları, sağlayıcı hatalarında yeniden deneme, değişiklik takibi (ilk / aynı / değişti, yeniden ifade edilen alıntının sahte değişiklik sayılmaması, metnin saklanmaması), 14 kategorinin hepsi için rehber ve ikon |
 | `npm run test:e2e` | **Gerçek paketlenmemiş eklenti** Chromium'da (Playwright), 14 adım: ayarlar sayfası, tespit kutusu, rapor, her alıntının sayfada birebir bulunması, rozet, "Metinde göster", risk haritası ve mevzuat bağlantıları, rapor dosyası (betik yok, CSP), injection sayfası, **değişiklik takibi** (v1 → v2), analiz geçmişi ve silinmesi, sağ tık ile seçili metin analizi, **gerçek site düzenleri** (koyu arka plan, `font-size:0`, iç kaydırma, `content-visibility`), XSS denemesi, anahtarsız mod, sağlayıcı hatası. Kurulum: `npm i -D playwright && npx playwright install chromium` |
+| `npm run test:web` | **Canlı demo** (GitHub Pages) 6 adım: tanıtım sayfasındaki tüm bağlantılar, kayıtlı Gemini yanıtının canlı doğrulanması, kurallar modu ve sayfalar arası değişiklik takibi, kendi anahtar modu (anahtar yalnızca Google'a gider, kalıcı depoya yazılmaz), indirme paketi, betik hatası olmaması |
 | `npm run eval:injection` | Okuyucu karşılaştırması, ablasyon ve hedefli saldırılar |
 | `npm run demo` | Cypress demo videosu → `docs/demo.mp4` (≤ 90 sn kontrolü) |
 

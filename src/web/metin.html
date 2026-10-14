@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kendi metniniz · Küçük Punto canlı demo</title>
+<link rel="stylesheet" href="fixture.css">
+<style>
+  .paste { font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #222; }
+  .paste h1 { font-family: Georgia, serif; }
+  .paste textarea { width: 100%; min-height: 280px; font: 14px/1.5 Georgia, serif; padding: 12px; border: 1px solid #c9c3b4; border-radius: 10px; resize: vertical; }
+  .paste .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  .paste button { font: 600 15px system-ui, sans-serif; color: #fff; background: linear-gradient(135deg, #132238, #25456f); border: 0; border-radius: 10px; padding: 11px 16px; cursor: pointer; }
+  .paste .hint { color: #666; font-size: 13px; }
+  .paste .err { color: #a52a22; font-size: 13.5px; }
+  @media (max-width: 640px) { .fixture-note { padding: 8px 16px; } .doc { margin: 0 16px 60px; } }
+</style>
+</head>
+<body>
+<div class="fixture-note">Kendi metniniz · Yapıştırdığınız metin bu sayfada kalır. Yalnızca üst çubukta "Kendi anahtarım" seçiliyken ve siz analiz ettiğinizde Google'a gönderilir.</div>
+<main class="doc" id="doc">
+  <form class="paste" id="paste" autocomplete="off">
+    <h1>Kendi sözleşme metninizi deneyin</h1>
+    <p>Bir sitenin kullanım koşullarını, gizlilik politikasını veya abonelik şartlarını kopyalayıp aşağıya yapıştırın.</p>
+    <textarea id="text" spellcheck="false" placeholder="Sözleşme metnini buraya yapıştırın…" aria-label="Sözleşme metni"></textarea>
+    <div class="row">
+      <button type="submit">Metni sayfaya yerleştir</button>
+      <span class="hint">Anahtarınız yoksa analiz yalnızca kurallarla yapılır ve rapor bunu açıkça yazar.</span>
+    </div>
+    <p class="err" id="err" role="alert"></p>
+  </form>
+</main>
+<script>
+  // Places the pasted text into the page as ordinary paragraphs (textContent only), then opens the
+  // panel: the analysis reads it exactly like any web page.
+  document.getElementById('paste').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var text = document.getElementById('text').value.replace(/\r/g, '').trim();
+    if (text.length < 200) { document.getElementById('err').textContent = 'Biraz daha uzun bir metin yapıştırın (en az birkaç paragraf).'; return; }
+    var doc = document.getElementById('doc');
+    doc.replaceChildren();
+    var parts = text.split(/\n\s*\n|\n/).map(function (t) { return t.replace(/\s+/g, ' ').trim(); }).filter(function (t) { return t.length > 1; });
+    parts.forEach(function (t, i) {
+      var el = document.createElement(i === 0 && t.length < 120 ? 'h1' : (t.length < 90 && !/[.:;]$/.test(t) ? 'h2' : 'p'));
+      el.textContent = t;
+      doc.appendChild(el);
+    });
+    var again = document.createElement('p');
+    var a = document.createElement('a'); a.href = 'metin.html'; a.textContent = '← Başka bir metin deneyin';
+    again.className = 'small'; again.appendChild(a); doc.appendChild(again);
+    if (parts[0] && parts[0].length < 120) document.title = parts[0];
+    window.scrollTo(0, 0);
+    if (window.__kpDemo) window.__kpDemo.open();
+  });
+</script>
+<script src="kp-web.js" defer></script>
+</body>
+</html>

@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isMain } from './env.js';
+import { buildWeb } from './build-web.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const common = { bundle: true, target: 'chrome116', charset: 'utf8', legalComments: 'none', logLevel: 'warning', minify: false };
@@ -22,6 +23,8 @@ export async function build({ quiet = false } = {}) {
   // the content script must never ship code paths that write HTML strings
   const content = fs.readFileSync(path.join(ROOT, 'extension/dist/content.js'), 'utf8');
   if (/\.innerHTML\s*=|insertAdjacentHTML|document\.write\(/.test(content)) throw new Error('content.js contains an HTML sink');
+  // the public live demo (GitHub Pages) uses the same sources; keep it in step with every build
+  await buildWeb({ quiet: true });
   if (!quiet) {
     for (const j of jobs) console.log(`  ${path.relative(ROOT, j.outfile).padEnd(28)} ${(fs.statSync(j.outfile).size / 1024).toFixed(1)} KB`);
     console.log(`build ok (${Date.now() - t0} ms)`);

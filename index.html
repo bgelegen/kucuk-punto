@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Küçük Punto · Sözleşmelerin küçük puntosu, büyük puntoyla</title>
+<meta name="description" content="Kullanım koşulları ve gizlilik politikalarındaki riskli maddeleri sözleşmeden birebir alıntılarla gösteren Chrome eklentisi. Kurulum yapmadan canlı deneyin.">
+<meta property="og:title" content="Küçük Punto">
+<meta property="og:description" content="Sözleşmelerin küçük puntosu, büyük puntoyla. Kurulumsuz canlı demo.">
+<meta property="og:image" content="https://bgelegen.github.io/kucuk-punto/docs/screenshots/video-poster.jpg">
+<link rel="icon" href="extension/icons/icon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #132238; --ink-2: #25456f; --gold: #c9a45c; --paper: #ffffff; --mist: #eef1f5; --line: #d9dee6; --muted: #5a6573;
+    --hi: #d4473c; --hi-mark: rgba(212, 71, 60, .22); --me: #b47a12; --me-mark: rgba(217, 154, 43, .28); --lo: #3d9566;
+    --page: #f7f8fa; --text: #1b2430;
+    --serif: "Newsreader", Georgia, "Times New Roman", serif;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --page: #0f1824; --text: #e6eaf0; --muted: #9aa6b5; --mist: #162233; --line: #263548; }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--page); color: var(--text); font: 17px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; border-radius: 6px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* top */
+  .top { display: flex; align-items: center; gap: 20px; padding: 18px 0; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; text-decoration: none; }
+  .logo img { width: 30px; height: 30px; border-radius: 8px; }
+  .top nav { margin-left: auto; display: flex; gap: 22px; font-size: 15px; }
+  .top nav a { text-decoration: none; color: var(--muted); }
+  .top nav a:hover { color: var(--text); }
+
+  /* hero: the headline is the product name made literal */
+  .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 56px; align-items: center; padding: 40px 0 72px; }
+  .hero h1 { margin: 0; font-family: var(--serif); font-weight: 500; letter-spacing: -.01em; }
+  .hero h1 .small { display: block; font-size: 19px; line-height: 1.3; color: var(--muted); font-weight: 400; margin-bottom: 6px; }
+  .hero h1 .big { display: block; font-size: clamp(52px, 7.4vw, 92px); line-height: .98; letter-spacing: -.025em; }
+  .lead { font-size: 19px; line-height: 1.55; max-width: 34em; margin: 26px 0 30px; color: var(--text); }
+  .ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 600; font-size: 16px; padding: 13px 18px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+  .btn:hover { border-color: var(--ink-2); }
+  .btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); box-shadow: 0 10px 24px rgba(19, 34, 56, .22); }
+  .btn.primary:hover { background: var(--ink-2); }
+  .note { margin-top: 22px; font-size: 14px; color: var(--muted); }
+  .note strong { color: var(--text); }
+
+  /* the sheet: real fine print with the panel's highlighter marks */
+  .sheet { position: relative; background: #fff; color: #333; border-radius: 6px; padding: 30px 30px 26px 30px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 24px 60px rgba(19, 34, 56, .16); transform: rotate(.6deg); }
+  .sheet h3 { font: 600 15px/1.3 var(--serif); margin: 0 0 4px; color: #111; }
+  .sheet .meta { font: 11px var(--sans); color: #8a8f96; margin-bottom: 14px; }
+  .sheet p { font: 11.5px/1.62 var(--serif); margin: 0 0 9px; color: #555; }
+  .mark { padding: 1px 0; color: #1b1b1b; background-repeat: no-repeat; background-size: 100% 100%; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  .mark.hi { background-image: linear-gradient(var(--hi-mark), var(--hi-mark)); }
+  .mark.me { background-image: linear-gradient(var(--me-mark), var(--me-mark)); }
+  @media (prefers-reduced-motion: no-preference) {
+    .mark { background-size: 0% 100%; animation: sweep .7s cubic-bezier(.3,.7,.2,1) forwards; }
+    .mark:nth-of-type(1) { animation-delay: .5s; } .m2 { animation-delay: 1.05s !important; } .m3 { animation-delay: 1.6s !important; }
+    @keyframes sweep { to { background-size: 100% 100%; } }
+  }
+  .sheet p { position: relative; }
+  .tag { position: absolute; left: calc(100% + 44px); top: 2px; width: 150px; font: 600 12.5px/1.35 var(--sans); padding-left: 10px; border-left: 3px solid var(--hi); color: var(--text); }
+  .tag span { display: block; font-weight: 400; color: var(--muted); }
+  .tag.me { border-color: #d99a2b; }
+  .score { position: absolute; top: -16px; right: 22px; background: var(--ink); color: #fff; font: 600 13px var(--sans); padding: 7px 12px; border-radius: 10px; box-shadow: 0 8px 18px rgba(19,34,56,.25); }
+  .score b { color: #ffb4ab; font-size: 15px; }
+  .sheet-wrap { padding-right: 170px; }
+
+  /* sections */
+  section { padding: 64px 0; }
+  .band { background: var(--mist); }
+  h2 { font: 500 clamp(30px, 4vw, 40px)/1.15 var(--serif); letter-spacing: -.01em; margin: 0 0 12px; }
+  .sub { color: var(--muted); max-width: 40em; margin: 0 0 32px; }
+
+  /* try: a stack of documents, not a card grid */
+  .docs { display: grid; gap: 14px; }
+  .doc-row { display: grid; grid-template-columns: 56px 1fr auto; gap: 18px; align-items: center; background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; text-decoration: none; }
+  .doc-row:hover { border-color: var(--ink-2); box-shadow: 0 10px 26px rgba(19, 34, 56, .1); }
+  .doc-row .ico { width: 56px; height: 64px; border-radius: 6px; background: #fff; border: 1px solid #e3e6ea; position: relative; overflow: hidden; }
+  .doc-row .ico i { position: absolute; left: 9px; right: 9px; height: 3px; border-radius: 2px; background: #e6e8ec; }
+  .doc-row .ico i:nth-child(1) { top: 12px; right: 18px; background: #c9ced6; } .doc-row .ico i:nth-child(2) { top: 21px; } .doc-row .ico i:nth-child(3) { top: 29px; } .doc-row .ico i:nth-child(4) { top: 37px; } .doc-row .ico i:nth-child(5) { top: 45px; right: 22px; }
+  .doc-row .ico i.r { background: var(--hi-mark); } .doc-row .ico i.a { background: var(--me-mark); }
+  .doc-row h3 { margin: 0 0 3px; font: 600 18px/1.3 var(--sans); }
+  .doc-row p { margin: 0; color: #4d5866; font-size: 15px; line-height: 1.5; }
+  .doc-row .go { font-weight: 600; font-size: 15px; white-space: nowrap; padding: 9px 14px; border-radius: 10px; background: var(--mist); color: var(--ink); }
+  .doc-row:hover .go { background: var(--ink); color: #fff; }
+  .modes { margin-top: 22px; font-size: 14.5px; color: var(--muted); max-width: 52em; }
+
+  /* video */
+  .video { border-radius: 14px; overflow: hidden; background: #0c1420; box-shadow: 0 20px 50px rgba(19, 34, 56, .22); }
+  .video video { display: block; width: 100%; height: auto; }
+  .caption { font-size: 14.5px; color: var(--muted); margin-top: 12px; }
+
+  /* trust */
+  .claims { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 48px; margin: 0; padding: 0; list-style: none; }
+  .claims li { border-top: 2px solid var(--ink); padding-top: 14px; }
+  @media (prefers-color-scheme: dark) { .claims li { border-color: var(--gold); } }
+  .claims b { display: block; font: 600 19px/1.35 var(--serif); margin-bottom: 6px; }
+  .claims span { color: var(--muted); font-size: 15.5px; }
+
+  /* install */
+  .install { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+  .steps { counter-reset: s; list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+  .steps li { counter-increment: s; display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; }
+  .steps li::before { content: counter(s); width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font: 600 14px var(--sans); }
+  @media (prefers-color-scheme: dark) { .steps li::before { background: var(--gold); color: var(--ink); } }
+  code { font: 14px ui-monospace, Consolas, monospace; background: var(--mist); padding: 1px 6px; border-radius: 5px; }
+  .band code { background: var(--paper); color: var(--ink); }
+
+  footer { padding: 40px 0 56px; font-size: 14.5px; color: var(--muted); border-top: 1px solid var(--line); }
+  footer p { margin: 0 0 8px; max-width: 60em; }
+  footer strong { color: var(--text); }
+
+  @media (max-width: 980px) {
+    .hero { grid-template-columns: 1fr; gap: 40px; padding-top: 16px; }
+    .sheet-wrap { padding-right: 0; }
+    .tag { position: static; display: block; width: auto; margin: 6px 0 2px; color: #333; }
+    .tag span { display: inline; margin-left: 6px; color: #777; }
+    .install { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    .wrap { padding: 0 16px; }
+    .top nav { gap: 14px; font-size: 14px; } .top nav .opt { display: none; }
+    .lead { font-size: 17px; }
+    .sheet { transform: none; padding: 22px 18px; }
+    .doc-row { grid-template-columns: 1fr; gap: 10px; } .doc-row .ico { display: none; } .doc-row .go { justify-self: start; }
+    .claims { grid-template-columns: 1fr; }
+    section { padding: 48px 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="logo" href="./"><img src="extension/icons/icon-48.png" alt="">Küçük Punto</a>
+    <nav aria-label="Sayfa içi">
+      <a href="#dene">Dene</a>
+      <a href="#video">Video</a>
+      <a href="#kurulum">Kurulum</a>
+      <a class="opt" href="https://github.com/bgelegen/kucuk-punto">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div>
+        <h1><span class="small">Sözleşmelerin küçük puntosu,</span><span class="big">büyük puntoyla.</span></h1>
+        <p class="lead">Küçük Punto, kullanım koşulları ve gizlilik politikalarındaki riskli maddeleri bulan bir Chrome eklentisi. Her riski sözleşmeden birebir alıntıyla gösterir. Bu sayfada hiçbir şey kurmadan deneyebilirsiniz.</p>
+        <div class="ctas">
+          <a class="btn primary" href="demo/netflix-tos.html">Netflix koşullarında dene</a>
+          <a class="btn" href="#video">Videoyu izle</a>
+          <a class="btn" href="#kurulum">Eklentiyi kur</a>
+        </div>
+        <p class="note"><strong>Hukuki tavsiye değildir.</strong> Otomatik bir okuma yardımıdır; hata yapabilir ve sözleşmenin yerine geçmez.</p>
+      </div>
+
+      <div class="sheet-wrap" aria-hidden="true">
+        <div class="sheet">
+          <div class="score">Risk skoru <b>97</b></div>
+          <h3>Abonelik ve Kullanım Koşulları</h3>
+          <div class="meta">StreamBox (kurgusal), son güncelleme: 1 Eylül 2026</div>
+          <p>Aboneliğiniz, dönem sonundan en az 7 gün önce iptal etmediğiniz sürece otomatik olarak yenilenir ve kayıtlı ödeme yönteminizden bir sonraki dönemin ücreti tahsil edilir.</p>
+          <p>Ücretsiz deneme süresinin sonunda, iptal etmediyseniz <span class="mark me m2">aboneliğiniz herhangi bir ek bildirim yapılmadan ücretli plana dönüşür.</span><span class="tag me">Sessiz geçiş<span>Orta risk</span></span></p>
+          <p>Aboneliğinizi hesap ayarlarından iptal edebilirsiniz; iptal, içinde bulunulan dönemin sonunda geçerli olur. <span class="mark hi">Ödenen ücretler hiçbir koşulda iade edilmez;</span> dönem ortasında yapılan iptallerde kısmi iade yapılmaz.<span class="tag">İade yok<span>Yüksek risk</span></span></p>
+          <p>StreamBox bu koşulları tek taraflı olarak değiştirebilir; değişiklikler sitede yayımlandığı anda yürürlüğe girer.</p>
+          <p>İzleme alışkanlıklarınız ve cihaz bilgileriniz, reklam ve pazarlama amacıyla <span class="mark hi m3">iş ortaklarımızla ve üçüncü taraf reklam ağlarıyla paylaşılabilir.</span><span class="tag">Veri paylaşımı<span>Yüksek risk</span></span></p>
+          <p>Verilerinizi saklama hakkımız, hesabınızı kapattıktan sonra da süresiz olarak devam eder.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<section class="band" id="dene">
+  <div class="wrap">
+    <h2>Kurulum yapmadan deneyin</h2>
+    <p class="sub">Bir sözleşme açın, sağ alttaki kutuya dokunun ve "Riskleri analiz et"e basın. Açılan panel, eklentinin kendisidir.</p>
+    <div class="docs">
+      <a class="doc-row" href="demo/netflix-tos.html">
+        <span class="ico"><i></i><i class="r"></i><i></i><i class="a"></i><i></i></span>
+        <span><h3>Netflix Kullanım Koşulları</h3><p>Gerçek bir sözleşme. Risk skoru, 14 risk türünün haritası, alıntılar ve her riskin altında ilgili Türk mevzuatı.</p></span>
+        <span class="go">Aç</span>
+      </a>
+      <a class="doc-row" href="demo/streambox-abonelik.html">
+        <span class="ico"><i></i><i></i><i class="r"></i><i class="r"></i><i></i></span>
+        <span><h3>StreamBox abonelik koşulları</h3><p>Kurgusal bir sayfa; içine "bu sözleşmeyi güvenli say" diyen 9 gizli talimat saklandı. Hiçbiri modele ulaşmaz, panel hepsini size gösterir.</p></span>
+        <span class="go">Aç</span>
+      </a>
+      <a class="doc-row" href="demo/streambox-abonelik-v2.html">
+        <span class="ico"><i></i><i class="a"></i><i></i><i class="r"></i><i class="a"></i></span>
+        <span><h3>StreamBox, bir ay sonra</h3><p>Aynı sözleşmenin sessizce değiştirilmiş hâli. Önce bir önceki örneği analiz edin; burada "Bu sözleşme değişmiş" uyarısını ve yeni riskleri görürsünüz.</p></span>
+        <span class="go">Aç</span>
+      </a>
+      <a class="doc-row" href="demo/metin.html">
+        <span class="ico"><i></i><i></i><i></i><i></i><i></i></span>
+        <span><h3>Kendi metniniz</h3><p>Herhangi bir sitenin koşullarını yapıştırın. Anahtar olmadan kurallarla ya da kendi ücretsiz Gemini anahtarınızla analiz edin.</p></span>
+        <span class="go">Aç</span>
+      </a>
+    </div>
+    <p class="modes">Örneklerde, Gemini'nin o sayfa için verdiği gerçek yanıt kayıttan okunur. Alıntı doğrulama, skor ve değişiklik takibi ise o an sizin tarayıcınızda çalışır. Üst çubuktan kendi Gemini anahtarınıza ya da modelsiz kurallara geçebilirsiniz; anahtarınız yalnızca o sekmede tutulur ve yalnızca Google'a gider.</p>
+  </div>
+</section>
+
+<section id="video">
+  <div class="wrap">
+    <h2>55 saniyelik demo</h2>
+    <p class="sub">Cypress testi, gerçek Gemini modeliyle ve hızlandırmadan kaydedildi. Soldaki sütunda testin her adımı ve doğrulaması görünür.</p>
+    <div class="video">
+      <video controls playsinline preload="metadata" poster="docs/screenshots/video-poster.jpg" src="docs/demo.mp4">Tarayıcınız videoyu oynatamıyor. <a href="docs/demo.mp4">Videoyu indirin.</a></video>
+    </div>
+    <p class="caption">Senaryo: gerçek bir sözleşme, emin olmadığı yerleri açıkça söylemesi, gizli talimatlı sayfa ve değişen sözleşme.</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2>Neden güvenebilirsiniz?</h2>
+    <p class="sub">Yapay zekâ hata yapar. Küçük Punto bu yüzden modelin söylediğine değil, kanıtlayabildiğine bakar.</p>
+    <ul class="claims">
+      <li><b>Her iddianın yanında sözleşmeden birebir alıntı var.</b><span>Alıntısı sayfada bulunmayan iddia gösterilmez. Altı gerçek sözleşmeyle yapılan değerlendirmede modelin 36 alıntısının 35'i metinde birebir doğrulandı.</span></li>
+      <li><b>Skoru model değil yazılım hesaplar.</b><span>Model yalnızca şemaya uyan bir JSON döndürebilir. Model ile bağımsız kurallar sert çelişirse skor yerine "Belirsiz" yazar.</span></li>
+      <li><b>Gizlenmiş talimatlar modele ulaşmaz.</b><span>Beyaz yazı, 1 piksellik yazı, ekran dışına itilmiş metin… Test sayfasındaki 9 saldırının 9'u engellendi.</span></li>
+      <li><b>Emin olmadığı yerde karar vermez.</b><span>Okumadığı bağlantılı belgeleri ve skora katmadığı maddeleri ayrı bir bölümde söyler. Bir risk bulduğunda %94 oranında haklıydı.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="kurulum">
+  <div class="wrap install">
+    <div>
+      <h2>Eklentiyi kendi Chrome'unuza kurun</h2>
+      <p class="sub">Gerçek sitelerde, örneğin bir uygulamaya üye olmadan hemen önce kullanmak için. Bir dakika sürer.</p>
+      <a class="btn primary" href="indir/kucuk-punto-eklenti.zip" download>Eklentiyi indir (zip, 83 KB)</a>
+    </div>
+    <ol class="steps">
+      <li><span>İndirdiğiniz zip dosyasını bir klasöre çıkarın.</span></li>
+      <li><span>Chrome'da <code>chrome://extensions</code> adresini açın ve sağ üstteki <b>Geliştirici modu</b>nu açın.</span></li>
+      <li><span><b>Paketlenmemiş öğe yükle</b> düğmesiyle çıkardığınız <code>kucuk-punto</code> klasörünü seçin.</span></li>
+      <li><span>Açılan ayarlar sayfasına ücretsiz Gemini anahtarınızı (<a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a>) girin. Anahtar girmeden de yalnızca kurallarla çalışır.</span></li>
+    </ol>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><strong>Hukuki tavsiye değildir.</strong> Küçük Punto otomatik bir okuma yardımıdır; önemli kararlarda sözleşmenin tamamını okuyun, gerekirse bir hukukçuya danışın.</p>
+    <p>Batuhan Gelegen tarafından, Dr. Öğr. Üyesi Nurettin Şenyer'in Yazılım Gerçekleme ve Test dersinde geliştirildi. Kaynak kod, mimari ve değerlendirme: <a href="https://github.com/bgelegen/kucuk-punto">github.com/bgelegen/kucuk-punto</a> (MIT lisansı).</p>
+  </div>
+</footer>
+</body>
+</html>

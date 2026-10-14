@@ -48,6 +48,12 @@ Sayfadaki her şey **veri**dir: görünür metin, gizli metin, öznitelikler, yo
     - API anahtarı servis çalışanında kalır; içerik betiğine ve sayfaya hiç gelmez.
 11. **Rozet (K10):** Skor araç çubuğu rozetinde de gösterilir. Sayfa paneli taklit edebilir, rozeti değiştiremez.
 
+## Canlı demo (GitHub Pages)
+
+- Sitede hiçbir API anahtarı yoktur. Örnekler, kaydedilmiş gerçek model yanıtlarıyla çalışır ve raporda "kayıtlı yanıt" diye etiketlenir; doğrulama ve skor ziyaretçinin tarayıcısında yapılır.
+- Ziyaretçi kendi anahtarını girerse anahtar yalnızca o sekmenin `sessionStorage`'ında tutulur, yalnızca `generativelanguage.googleapis.com`'a gönderilir ve "Anahtarı unut" ile silinir. `npm run test:web` anahtarın başka bir adrese gitmediğini ve `localStorage`'a yazılmadığını doğrular. Not: `bgelegen.github.io` altındaki tüm Pages sayfaları aynı kökeni paylaşır.
+- Demo betiği (`demo/kp-web.js`) eklentiyle aynı HTML yazma denetiminden geçer (`innerHTML` yok).
+
 ## Bilinen sınırlılıklar
 
 - **Filtreden kaçan görünür talimat + itaatkâr model:** Model yanıltılabilir. K7 bunu büyük bir çelişki olarak yakalar ve "Belirsiz" der. Küçük bir sapmayı (ör. 60 yerine 45) yakalamaz.
